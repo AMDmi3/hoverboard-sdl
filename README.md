@@ -1,46 +1,8 @@
-# libSDL2pp project template
+# hoverboard-sdl
 
-This is a template for libSDL2pp-using projects. It contains:
+[![Build Status](https://travis-ci.org/AMDmi3/hoverboard-sdl.svg?branch=master)](https://travis-ci.org/AMDmi3/hoverboard-sdl)
 
-* libSDL2pp submodule
-* GPLv3 license
-* Readme file
-* Simple libSDL2pp program
-* CMakeLists.txt to build the project
-* Travis CI config file
-
-To use it, just clone this repository, squash all commits into
-single one it if you want and replace a number of ```fixme```
-placeholders with names approproate for your prokect:
-
-* CMakeLists.txt:
-  * Project name
-  * Variable names for headers and sources
-  * Main target name
-* main.cc:
-  * Project name in license header (4 times)
-  * Main window title
-* README.md:
-  * Header
-  * GitHub user and project names in travis icon
-  * Project description
-  * URL for your GitHub profile
-
-To make sure you've changed everything:
-
-```
-grep -Ri fixme *
-```
-
-*Finally, remove everything up to the following line and have fun developing your libSDL2pp-using project!*
-
----
-
-# FIXME_NAME
-
-[![Build Status](https://travis-ci.org/FIXME_USER/FIXME_PROJECT.svg?branch=master)](https://travis-ci.org/FIXME_USER/FIXME_PROJECT)
-
-FIXME_DESCRIPTION
+Desktop version of [xkcd 1608 "Hoverboard"](https://xkcd.com/1608/) game.
 
 ## Building
 
@@ -63,11 +25,12 @@ cmake . && make
 
 ## Author
 
-* [FIXME_NAME](https://github.com/FIXME_USER) <FIXME_EMAIL>
+* [AMDmi3](https://github.com/AMDmi3) <amdmi3@amdmi3.ru>
 
 ## License
 
-GPLv3 or later, see COPYING
+* Code: GPLv3 or later, see COPYING
+* Data: Creative Commons Attribution-NonCommercial 2.5 License, see [kxcd.com](https://xkcd.com/license.html).
 
 The project also bundles third party software under its own licenses:
 

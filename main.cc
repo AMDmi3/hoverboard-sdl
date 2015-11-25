@@ -1,36 +1,46 @@
 /*
- * Copyright (C) YEAR NAME
+ * Copyright (C) 2015 Dmitry Marakasov <amdmi3@amdmi3.ru>
  *
- * This file is part of FIXME_NAME.
+ * This file is part of hoverboard-sdl.
  *
- * FIXME_NAME is free software: you can redistribute it and/or modify
+ * hoverboard-sdl is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * FIXME_NAME is distributed in the hope that it will be useful,
+ * hoverboard-sdl is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with FIXME_NAME.  If not, see <http://www.gnu.org/licenses/>.
+ * along with hoverboard-sdl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <iostream>
 #include <string>
+#include <sstream>
 
 #include <SDL2/SDL.h>
 
 #include <SDL2pp/SDL.hh>
 #include <SDL2pp/Window.hh>
 #include <SDL2pp/Renderer.hh>
+#include <SDL2pp/Texture.hh>
 
 int main(int /*argc*/, char** /*argv*/) try {
 	// SDL stuff
 	SDL2pp::SDL sdl(SDL_INIT_VIDEO);
-	SDL2pp::Window window("FIXME_TITLE", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_RESIZABLE);
+	SDL2pp::Window window("Hoverboard", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_RESIZABLE);
 	SDL2pp::Renderer renderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+	int start_x = 512187;
+	int start_y = -549668;
+
+	std::stringstream tilepath;
+	tilepath << DATADIR << "/" << (start_x / 512) << "/" << (start_y / 512 - 1) << ".png";
+
+	SDL2pp::Texture tile(renderer, tilepath.str());
 
 	unsigned int prev_ticks = SDL_GetTicks();
 
@@ -54,8 +64,10 @@ int main(int /*argc*/, char** /*argv*/) try {
 		}
 
 		// Render
-		renderer.SetDrawColor(0, 0, 0);
+		renderer.SetDrawColor(255, 255, 255);
 		renderer.Clear();
+
+		renderer.Copy(tile);
 
 		renderer.Present();
 
