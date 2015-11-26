@@ -38,8 +38,8 @@ int main(int /*argc*/, char** /*argv*/) try {
 
 	Map map(renderer);
 
-	float xpos = 512187;
-	float ypos = -549668;
+	float xpos = 512106;
+	float ypos = -549612;
 
 	float xspeed = 0.0;
 	float yspeed = 0.0;
