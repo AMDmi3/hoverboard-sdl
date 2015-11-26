@@ -92,6 +92,11 @@ int main(int /*argc*/, char** /*argv*/) try {
 		xpos += xspeed * frame_delta;
 		ypos += yspeed * frame_delta;
 
+		if (xpos < 475136)
+			xpos = 475136;
+		if (xpos > 567295)
+			xpos = 567295;
+
 		// Render
 		renderer.SetDrawColor(255, 255, 255);
 		renderer.Clear();
