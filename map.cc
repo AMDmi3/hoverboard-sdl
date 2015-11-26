@@ -52,8 +52,11 @@ void Map::Render(SDL2pp::Rect rect) {
 	SDL2pp::Point tile;
 	for (tile.x = start_tile.x; tile.x <= end_tile.x; tile.x++) {
 		for (tile.y = start_tile.y; tile.y <= end_tile.y; tile.y++) {
+			// skip known-absent tiles
 			if (absent_tiles_.find(tile) != absent_tiles_.end())
 				continue;
+
+			// find loaded tile or try to load
 			auto tileiter = tiles_.find(tile);
 			if (tileiter == tiles_.end()) {
 				try {
@@ -64,7 +67,16 @@ void Map::Render(SDL2pp::Rect rect) {
 				}
 			}
 
+			// render tile on screen
 			renderer_.Copy(tileiter->second, SDL2pp::Rect(0, 0, tilesize, tilesize), (tile - start_tile) * tilesize + offset);
 		}
+	}
+
+	// free tiles outside of visible area
+	for (auto it = tiles_.begin(); it != tiles_.end();) {
+		if (!SDL2pp::Rect(it->first * tilesize, SDL2pp::Point(tilesize, tilesize)).Intersects(rect))
+			it = tiles_.erase(it);
+		else
+			it++;
 	}
 }
