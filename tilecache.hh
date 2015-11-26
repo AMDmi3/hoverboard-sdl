@@ -38,6 +38,8 @@ private:
 
 	std::map<SDL2pp::Point, TilePtr> tiles_;
 
+	size_t cache_size_;
+
 private:
 	static std::string MakeTilePath(const SDL2pp::Point& coords);
 	static SurfacePtr LoadTileData(const SDL2pp::Point& coords);
@@ -46,6 +48,8 @@ private:
 public:
 	TileCache(SDL2pp::Renderer& renderer);
 	~TileCache();
+
+	void SetCacheSize(size_t cache_size);
 
 	void Render(const SDL2pp::Rect& rect);
 };
