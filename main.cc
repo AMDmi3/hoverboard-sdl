@@ -28,19 +28,21 @@
 #include <SDL2pp/Renderer.hh>
 #include <SDL2pp/Texture.hh>
 
+#include "map.hh"
+
 int main(int /*argc*/, char** /*argv*/) try {
 	// SDL stuff
 	SDL2pp::SDL sdl(SDL_INIT_VIDEO);
 	SDL2pp::Window window("Hoverboard", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_RESIZABLE);
 	SDL2pp::Renderer renderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-	int start_x = 512187;
-	int start_y = -549668;
+	Map map(renderer);
 
-	std::stringstream tilepath;
-	tilepath << DATADIR << "/" << (start_x / 512) << "/" << (start_y / 512 - 1) << ".png";
+	float xpos = 512187;
+	float ypos = -549668;
 
-	SDL2pp::Texture tile(renderer, tilepath.str());
+	float xspeed = 0.0;
+	float yspeed = 0.0;
 
 	unsigned int prev_ticks = SDL_GetTicks();
 
@@ -59,15 +61,44 @@ int main(int /*argc*/, char** /*argv*/) try {
 				switch (event.key.keysym.sym) {
 				case SDLK_ESCAPE: case SDLK_q:
 					return 0;
+				case SDLK_LEFT:
+					xspeed = -1.0f;
+					break;
+				case SDLK_RIGHT:
+					xspeed = 1.0f;
+					break;
+				case SDLK_UP:
+					yspeed = -1.0f;
+					break;
+				case SDLK_DOWN:
+					yspeed = 1.0f;
+					break;
+				}
+			} else if (event.type == SDL_KEYUP) {
+				switch (event.key.keysym.sym) {
+				case SDLK_LEFT:
+				case SDLK_RIGHT:
+					xspeed = 0.0f;
+					break;
+				case SDLK_UP:
+				case SDLK_DOWN:
+					yspeed = 0.0f;
+					break;
 				}
 			}
 		}
+
+		// Move
+		xpos += xspeed * frame_delta;
+		ypos += yspeed * frame_delta;
 
 		// Render
 		renderer.SetDrawColor(255, 255, 255);
 		renderer.Clear();
 
-		renderer.Copy(tile);
+		SDL2pp::Rect view_rect(SDL2pp::Point((int)xpos, (int)ypos) - window.GetSize() / 2, window.GetSize());
+
+		map.Render(view_rect);
 
 		renderer.Present();
 
