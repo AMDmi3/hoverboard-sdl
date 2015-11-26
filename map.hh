@@ -22,6 +22,7 @@
 
 #include <map>
 #include <set>
+#include <vector>
 
 #include <SDL2pp/Rect.hh>
 #include <SDL2pp/Texture.hh>
@@ -29,7 +30,12 @@
 
 class Map {
 private:
+	const static std::vector<SDL2pp::Point> coins_;
+
+private:
 	SDL2pp::Renderer& renderer_;
+
+	SDL2pp::Texture coin_texture_;
 
 	std::set<SDL2pp::Point> absent_tiles_;
 	std::map<SDL2pp::Point, SDL2pp::Texture> tiles_;
