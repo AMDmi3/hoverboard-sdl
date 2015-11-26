@@ -17,42 +17,37 @@
  * along with hoverboard-sdl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MAP_HH
-#define MAP_HH
+#ifndef TILECACHE_HH
+#define TILECACHE_HH
 
 #include <map>
-#include <set>
-#include <vector>
+#include <memory>
+#include <string>
 
-#include <SDL2pp/Rect.hh>
-#include <SDL2pp/Texture.hh>
+#include <SDL2pp/Surface.hh>
 #include <SDL2pp/Renderer.hh>
 
-class Map {
-private:
-	const static std::vector<SDL2pp::Point> coins_;
+class Tile;
 
+class TileCache {
 private:
 	SDL2pp::Renderer& renderer_;
 
-	SDL2pp::Texture coin_texture_;
+	typedef std::unique_ptr<Tile> TilePtr;
+	typedef std::unique_ptr<SDL2pp::Surface> SurfacePtr;
 
-	std::set<SDL2pp::Point> absent_tiles_;
-	std::map<SDL2pp::Point, SDL2pp::Texture> tiles_;
+	std::map<SDL2pp::Point, TilePtr> tiles_;
 
 private:
-	static std::string MakeTilePath(SDL2pp::Point tile);
-
-	constexpr static int floordiv(int a, int b) {
-		// signed division with flooring (instead of rounding to zero)
-		return a < 0 ? (a - b + 1) / b : a / b;
-	}
+	static std::string MakeTilePath(const SDL2pp::Point& coords);
+	static SurfacePtr LoadTileData(const SDL2pp::Point& coords);
+	TilePtr CreateTile(const SDL2pp::Point& coords, SurfacePtr surface);
 
 public:
-	Map(SDL2pp::Renderer& renderer);
-	~Map();
+	TileCache(SDL2pp::Renderer& renderer);
+	~TileCache();
 
-	void Render(SDL2pp::Rect rect);
+	void Render(const SDL2pp::Rect& rect);
 };
 
-#endif // MAP_HH
+#endif // TILECACHE_HH

@@ -17,67 +17,41 @@
  * along with hoverboard-sdl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "map.hh"
+#include "game.hh"
+
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include <SDL2pp/Surface.hh>
+
+#include <memory>
 
 #include <sstream>
 
-std::string Map::MakeTilePath(SDL2pp::Point tile) {
-	std::stringstream filename;
-	filename << DATADIR << "/" << tile.x << "/" << tile.y << ".png";
-	return filename.str();
+
+Game::Game(SDL2pp::Renderer& renderer)
+	: renderer_(renderer),
+	  coin_texture_(renderer_, DATADIR "/coin.png"),
+	  player_texture_(renderer_, DATADIR "/all-four.png"),
+	  tc_(renderer) {
 }
 
-Map::Map(SDL2pp::Renderer& renderer) : renderer_(renderer), coin_texture_(renderer_, DATADIR "/coin.png") {
+Game::~Game() {
 }
 
-Map::~Map() {
-}
-
-void Map::Render(SDL2pp::Rect rect) {
-	static const int tilesize = 512;
-
-	SDL2pp::Point start_tile(floordiv(rect.x, tilesize), floordiv(rect.y, tilesize));
-	SDL2pp::Point end_tile(floordiv(rect.GetX2(), tilesize), floordiv(rect.GetY2(), tilesize));
-
-	SDL2pp::Point offset = start_tile * tilesize - SDL2pp::Point(rect.x, rect.y);
-
-	SDL2pp::Point tile;
-	for (tile.x = start_tile.x; tile.x <= end_tile.x; tile.x++) {
-		for (tile.y = start_tile.y; tile.y <= end_tile.y; tile.y++) {
-			// skip known-absent tiles
-			if (absent_tiles_.find(tile) != absent_tiles_.end())
-				continue;
-
-			// find loaded tile or try to load
-			auto tileiter = tiles_.find(tile);
-			if (tileiter == tiles_.end()) {
-				try {
-					tileiter = tiles_.insert(std::make_pair(tile, SDL2pp::Texture(renderer_, MakeTilePath(tile)))).first;
-				} catch (...) {
-					absent_tiles_.insert(tile);
-					continue;
-				}
-			}
-
-			// render tile on screen
-			renderer_.Copy(tileiter->second, SDL2pp::Rect(0, 0, tilesize, tilesize), (tile - start_tile) * tilesize + offset);
-		}
-	}
-
-	// free tiles outside of visible area
-	for (auto it = tiles_.begin(); it != tiles_.end();) {
-		if (!SDL2pp::Rect(it->first * tilesize, SDL2pp::Point(tilesize, tilesize)).Intersects(rect))
-			it = tiles_.erase(it);
-		else
-			it++;
-	}
+void Game::Render(SDL2pp::Rect rect) {
+	tc_.Render(rect);
 
 	// draw coins
-	for (auto& coin : coins_)
+	for (auto& coin : coin_locations_)
 		renderer_.Copy(coin_texture_, SDL2pp::NullOpt, coin - SDL2pp::Point(rect.x, rect.y) - coin_texture_.GetSize() / 2 - SDL2pp::Point(1, 1) /* pixel perfect match */ );
+
+	// draw player
+	SDL2pp::Point player_size(29, 59);
+	renderer_.Copy(player_texture_, SDL2pp::Rect(SDL2pp::Point(0, 0), player_size), SDL2pp::Point(rect.w / 2, rect.h / 2) - player_size / 2 - SDL2pp::Point(1, 1));
 }
 
-const std::vector<SDL2pp::Point> Map::coins_ = {
+const std::vector<SDL2pp::Point> Game::coin_locations_ = {
 	{537027, -560249},
 	{525689, -560616},
 	{526077, -560616},

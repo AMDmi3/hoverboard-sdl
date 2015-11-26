@@ -28,7 +28,7 @@
 #include <SDL2pp/Renderer.hh>
 #include <SDL2pp/Texture.hh>
 
-#include "map.hh"
+#include "game.hh"
 
 int main(int /*argc*/, char** /*argv*/) try {
 	// SDL stuff
@@ -36,7 +36,7 @@ int main(int /*argc*/, char** /*argv*/) try {
 	SDL2pp::Window window("Hoverboard", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_RESIZABLE);
 	SDL2pp::Renderer renderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-	Map map(renderer);
+	Game game(renderer);
 
 	float xpos = 512106;
 	float ypos = -549612;
@@ -103,7 +103,7 @@ int main(int /*argc*/, char** /*argv*/) try {
 
 		SDL2pp::Rect view_rect(SDL2pp::Point((int)xpos, (int)ypos) - window.GetSize() / 2, window.GetSize());
 
-		map.Render(view_rect);
+		game.Render(view_rect);
 
 		renderer.Present();
 
