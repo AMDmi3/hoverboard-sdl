@@ -21,14 +21,6 @@
 
 #include <sstream>
 
-static bool operator<(SDL2pp::Point a, SDL2pp::Point b) {
-	if (a.x < b.x)
-		return true;
-	if (a.x == b.x)
-		return a.y < b.y;
-	return false;
-}
-
 std::string Map::MakeTilePath(SDL2pp::Point tile) {
 	std::stringstream filename;
 	filename << DATADIR << "/" << tile.x << "/" << tile.y << ".png";
