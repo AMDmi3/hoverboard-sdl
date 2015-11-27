@@ -36,7 +36,10 @@ Game::Game(SDL2pp::Renderer& renderer)
 	  font_20_(DATADIR "/xkcd-Regular.otf", 20),
 	  font_34_(DATADIR "/xkcd-Regular.otf", 34),
 	  font_40_(DATADIR "/xkcd-Regular.otf", 40),
+	  arrowkeys_message_(renderer_, font_18_.RenderText_Blended("use the arrow keys to move, esc/q to quit", SDL_Color{ 255, 255, 255, 192 })),
+	  playarea_message_(renderer_, font_40_.RenderText_Blended("RETURN TO THE PLAY AREA", SDL_Color{ 255, 0, 0, 255 } )),
 	  tc_(renderer),
+	  session_start_(std::chrono::steady_clock::now()),
 	  coins_(coin_locations_) {
 }
 
@@ -94,6 +97,9 @@ void Game::Update(float delta_t) {
 	if (action_flags_ & RIGHT)
 		xspeed += speed;
 
+	if (action_flags_)
+		player_moved_ = true;
+
 	player_x_ += xspeed * delta_t;
 	player_y_ += yspeed * delta_t;
 
@@ -110,8 +116,22 @@ void Game::Update(float delta_t) {
 	coins_.remove_if([&](const SDL2pp::Point& coin){ return player_rect.Intersects(GetCoinRect(coin)); } );
 
 	// Deposit coins
-	if (player_rect.Intersects(deposit_rect_))
-		DepositCoins();
+	if (player_rect.Intersects(deposit_rect_)) {
+		if (!is_depositing_)
+			DepositCoins();
+		is_depositing_ = true;
+	} else {
+		is_depositing_ = false;
+	}
+
+	// Handle player leaving play area
+	if (player_rect.Intersects(play_area_rect_)) {
+		is_in_play_area_ = true;
+	} else {
+		if (is_in_play_area_)
+			playarea_leave_moment_ = std::chrono::steady_clock::now();
+		is_in_play_area_ = false;
+	}
 
 	// Update tile cache
 	tc_.UpdateCache(GetCameraRect().GetExtension(512));
@@ -128,10 +148,100 @@ void Game::Render() {
 
 	// draw player
 	renderer_.Copy(player_texture_, SDL2pp::Rect(0, 0, GetPlayerRect().w, GetPlayerRect().h), GetPlayerRect() - SDL2pp::Point(camerarect.x, camerarect.y));
+
+	// draw messages
+	if (std::chrono::steady_clock::now() < deposit_message_expiration_) {
+		if (deposit_big_message_) {
+			SDL2pp::Point pos(
+					camerarect.w / 2 - deposit_big_message_->GetWidth() / 2,
+					camerarect.h - deposit_big_message_->GetHeight() - 46
+				);
+
+			renderer_.Copy(*deposit_big_message_, SDL2pp::NullOpt, pos);
+		}
+		if (deposit_small_message_) {
+			SDL2pp::Point pos(
+					camerarect.w / 2 - deposit_small_message_->GetWidth() / 2,
+					camerarect.h - deposit_small_message_->GetHeight() - 20
+				);
+
+			renderer_.Copy(*deposit_small_message_, SDL2pp::NullOpt, pos);
+		}
+	}
+
+	if (!player_moved_) {
+		SDL2pp::Point pos(
+				camerarect.w / 2 - arrowkeys_message_.GetWidth() / 2,
+				camerarect.h - arrowkeys_message_.GetHeight() - 20
+			);
+
+		renderer_.Copy(arrowkeys_message_, SDL2pp::NullOpt, pos);
+	}
+
+	if (!is_in_play_area_) {
+		auto msec_since_escape = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - playarea_leave_moment_).count();
+
+		if (msec_since_escape < 5 * 2500 && msec_since_escape % 2500 < 1500 && msec_since_escape % 500 < 250) {
+			SDL2pp::Point pos(
+					camerarect.w / 2 - playarea_message_.GetWidth() / 2,
+					camerarect.h - playarea_message_.GetHeight() - 20
+				);
+
+			renderer_.Copy(playarea_message_, SDL2pp::NullOpt, pos);
+		}
+	}
 }
 
 void Game::DepositCoins() {
+	size_t numcoins = coin_locations_.size() - coins_.size();
+	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - session_start_).count();
+
+	{
+		std::stringstream message;
+
+		message << "YOU GOT ";
+		if (numcoins == 1)
+			message << "A SINGLE COIN";
+		else
+			message << numcoins << " COINS";
+		message << " IN " << seconds << " SECOND";
+		if (seconds != 1)
+			message << "S";
+
+		deposit_big_message_.reset(new SDL2pp::Texture(renderer_, font_34_.RenderText_Blended(message.str(), SDL_Color{ 0xee, 0xd0, 0x00, 0xff } )));
+	}
+
+	{
+		std::string message;
+
+		if (numcoins == 0)
+			message = "you successfully avoided all the coins!";
+		else if (numcoins == 1)
+			message = "it's a start.";
+		else if (numcoins < 5)
+			message = "not bad!";
+		else if (numcoins < 10)
+			message = "terrific!";
+		else if (numcoins == 17)
+			message = "you found all the coins! great job!";
+		else if (numcoins == 42)
+			message = "you found all the coins! great job!";
+		else if (numcoins == coin_locations_.size())
+			message = "are you gandalf?";
+
+		// In browser variant, this message is rendered with 26 size font, however
+		// while browser renders letters as small caps (haven't checked, but I
+		// assume this font doesn't have small letters), SDL_ttf renders them
+		// as normal caps. Thus with SDL_ttf we have to take smaller font
+		if (!message.empty())
+			deposit_small_message_.reset(new SDL2pp::Texture(renderer_, font_20_.RenderText_Blended(message, SDL_Color{ 0xee, 0xd0, 0x00, 0xff } )));
+		else
+			deposit_small_message_.reset(nullptr);
+	}
+
 	coins_ = coin_locations_;
+	session_start_ = std::chrono::steady_clock::now();
+	deposit_message_expiration_ = std::chrono::steady_clock::now() + std::chrono::seconds(3);
 }
 
 const Game::CoinList Game::coin_locations_ = {
@@ -306,4 +416,5 @@ const Game::CoinList Game::coin_locations_ = {
 	{529300, -560287}
 };
 
-const SDL2pp::Rect Game::deposit_rect_;
+constexpr SDL2pp::Rect Game::deposit_rect_;
+constexpr SDL2pp::Rect Game::play_area_rect_;

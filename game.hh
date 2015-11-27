@@ -24,6 +24,8 @@
 #include <set>
 #include <list>
 #include <vector>
+#include <chrono>
+#include <memory>
 
 #include <SDL2pp/Rect.hh>
 #include <SDL2pp/Texture.hh>
@@ -59,6 +61,7 @@ private:
 	constexpr static int coin_size_ = 25;
 
 	constexpr static SDL2pp::Rect deposit_rect_ = SDL2pp::Rect::FromCorners(512257, -549650, 512309, -549584);
+	constexpr static SDL2pp::Rect play_area_rect_ = SDL2pp::Rect::FromCorners(511484, -550619, 513026, -549568);
 
 private:
 	SDL2pp::Renderer& renderer_;
@@ -71,9 +74,26 @@ private:
 	SDL2pp::Font font_34_;
 	SDL2pp::Font font_40_;
 
+	SDL2pp::Texture arrowkeys_message_;
+	SDL2pp::Texture playarea_message_;
+
+	std::unique_ptr<SDL2pp::Texture> deposit_big_message_;
+	std::unique_ptr<SDL2pp::Texture> deposit_small_message_;
+
 	TileCache tc_;
 
+	// Messages
+	bool player_moved_ = false;
+
+	std::chrono::steady_clock::time_point deposit_message_expiration_;
+	std::chrono::steady_clock::time_point playarea_leave_moment_;
+
 	// Game state
+	std::chrono::steady_clock::time_point session_start_;
+
+	bool is_depositing_ = false;
+	bool is_in_play_area_ = true;
+
 	int action_flags_ = 0;
 
 	float player_x_ = start_player_x_;
