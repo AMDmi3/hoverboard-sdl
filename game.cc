@@ -55,12 +55,19 @@ void Game::ClearActionFlag(int flag) {
 }
 
 SDL2pp::Rect Game::GetCameraRect() const {
-	return SDL2pp::Rect(
+	SDL2pp::Rect rect(
 			(int)player_x_ - renderer_.GetOutputWidth() / 2,
 			(int)player_y_ - renderer_.GetOutputHeight() / 2,
 			renderer_.GetOutputWidth(),
 			renderer_.GetOutputHeight()
 		);
+
+	if (rect.x < left_world_bound_)
+		rect.x = left_world_bound_;
+	if (rect.GetX2() > right_world_bound_)
+		rect.x -= rect.GetX2() - right_world_bound_;
+
+	return rect;
 }
 
 SDL2pp::Rect Game::GetPlayerRect() const {
@@ -104,10 +111,10 @@ void Game::Update(float delta_t) {
 	player_y_ += yspeed * delta_t;
 
 	// Limit world
-	if (player_x_ < left_world_bound_)
-		player_x_ = left_world_bound_;
-	if (player_y_ > right_world_bound_)
-		player_y_ = right_world_bound_;
+	if (GetPlayerRect().x < left_world_bound_)
+		player_x_ += left_world_bound_ - GetPlayerRect().x;
+	if (GetPlayerRect().GetX2() > right_world_bound_)
+		player_x_ -= GetPlayerRect().GetX2() - right_world_bound_;
 
 	// Player rectangle
 	SDL2pp::Rect player_rect = GetPlayerRect();
