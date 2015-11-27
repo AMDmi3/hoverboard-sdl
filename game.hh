@@ -74,10 +74,10 @@ private:
 	TileCache tc_;
 
 	// Game state
-	int action_flags_;
+	int action_flags_ = 0;
 
-	float player_x_;
-	float player_y_;
+	float player_x_ = start_player_x_;
+	float player_y_ = start_player_y_;
 
 	CoinList coins_;
 

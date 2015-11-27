@@ -37,9 +37,6 @@ Game::Game(SDL2pp::Renderer& renderer)
 	  font_34_(DATADIR "/xkcd-Regular.otf", 34),
 	  font_40_(DATADIR "/xkcd-Regular.otf", 40),
 	  tc_(renderer),
-	  action_flags_(0),
-	  player_x_(start_player_x_),
-	  player_y_(start_player_y_),
 	  coins_(coin_locations_) {
 }
 
