@@ -40,6 +40,7 @@ Game::~Game() {
 }
 
 void Game::Render(SDL2pp::Rect rect) {
+	tc_.UpdateCache(rect.GetExtension(512));
 	tc_.Render(rect);
 
 	// draw coins

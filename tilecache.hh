@@ -23,6 +23,10 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <condition_variable>
+#include <mutex>
+#include <list>
+#include <thread>
 
 #include <SDL2pp/Surface.hh>
 #include <SDL2pp/Renderer.hh>
@@ -31,14 +35,25 @@ class Tile;
 
 class TileCache {
 private:
-	SDL2pp::Renderer& renderer_;
-
 	typedef std::unique_ptr<Tile> TilePtr;
 	typedef std::unique_ptr<SDL2pp::Surface> SurfacePtr;
 
-	std::map<SDL2pp::Point, TilePtr> tiles_;
+private:
+	SDL2pp::Renderer& renderer_;
 
+	std::map<SDL2pp::Point, TilePtr> tiles_;
 	size_t cache_size_;
+
+	// background loader
+	std::thread loader_thread_;
+	std::list<SDL2pp::Point> loader_queue_;
+	std::list<std::pair<SDL2pp::Point, SurfacePtr>> loaded_list_;
+	SDL2pp::Optional<SDL2pp::Point> currently_loading_;
+
+	std::mutex loader_queue_mutex_;
+	std::condition_variable loader_queue_condvar_;
+
+	bool finish_thread_;
 
 private:
 	static std::string MakeTilePath(const SDL2pp::Point& coords);
@@ -51,6 +66,7 @@ public:
 
 	void SetCacheSize(size_t cache_size);
 
+	void UpdateCache(const SDL2pp::Rect& rect);
 	void Render(const SDL2pp::Rect& rect);
 };
 
