@@ -36,6 +36,7 @@ Dependencies:
 * [CMake](http://www.cmake.org/)
 * [SDL2](http://libsdl.org/)
 * [SDL2_image](https://www.libsdl.org/projects/SDL_image/)
+* [SDL2_ttf](https://www.libsdl.org/projects/SDL_ttf/)
 
 The project also uses libSDL2pp, C++11 bindings library for SDL2.
 It's included into git repository as a submodule, so if you've

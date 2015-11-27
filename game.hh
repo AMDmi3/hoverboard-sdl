@@ -28,6 +28,7 @@
 #include <SDL2pp/Rect.hh>
 #include <SDL2pp/Texture.hh>
 #include <SDL2pp/Renderer.hh>
+#include <SDL2pp/Font.hh>
 
 #include "tilecache.hh"
 
@@ -65,6 +66,10 @@ private:
 	// Resources
 	SDL2pp::Texture coin_texture_;
 	SDL2pp::Texture player_texture_;
+	SDL2pp::Font font_18_;
+	SDL2pp::Font font_20_;
+	SDL2pp::Font font_34_;
+	SDL2pp::Font font_40_;
 
 	TileCache tc_;
 
