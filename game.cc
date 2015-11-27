@@ -28,28 +28,69 @@
 
 #include <sstream>
 
-
 Game::Game(SDL2pp::Renderer& renderer)
 	: renderer_(renderer),
 	  coin_texture_(renderer_, DATADIR "/coin.png"),
 	  player_texture_(renderer_, DATADIR "/all-four.png"),
-	  tc_(renderer) {
+	  tc_(renderer),
+	  action_flags_(0),
+	  player_x_(start_player_x_),
+	  player_y_(start_player_y_) {
 }
 
 Game::~Game() {
 }
 
-void Game::Render(SDL2pp::Rect rect) {
-	tc_.UpdateCache(rect.GetExtension(512));
-	tc_.Render(rect);
+void Game::SetActionFlag(int flag) {
+	action_flags_ |= flag;
+}
+
+void Game::ClearActionFlag(int flag) {
+	action_flags_ &= ~flag;
+}
+
+SDL2pp::Rect Game::GetCamera() const {
+	return SDL2pp::Rect(SDL2pp::Point((int)player_x_, (int)player_y_) - renderer_.GetOutputSize() / 2, renderer_.GetOutputSize());
+}
+
+void Game::Update(float delta_t) {
+	const float speed = 1.0;
+
+	float xspeed = 0.0;
+	float yspeed = 0.0;
+
+	if (action_flags_ & UP)
+		yspeed -= speed;
+	if (action_flags_ & DOWN)
+		yspeed += speed;
+	if (action_flags_ & LEFT)
+		xspeed -= speed;
+	if (action_flags_ & RIGHT)
+		xspeed += speed;
+
+	player_x_ += xspeed * delta_t;
+	player_y_ += yspeed * delta_t;
+
+	if (player_x_ < left_world_bound_)
+		player_x_ = left_world_bound_;
+	if (player_y_ > right_world_bound_)
+		player_y_ = right_world_bound_;
+
+	tc_.UpdateCache(GetCamera().GetExtension(512));
+}
+
+void Game::Render() {
+	SDL2pp::Rect camerarect = GetCamera();
+
+	tc_.Render(camerarect);
 
 	// draw coins
 	for (auto& coin : coin_locations_)
-		renderer_.Copy(coin_texture_, SDL2pp::NullOpt, coin - SDL2pp::Point(rect.x, rect.y) - coin_texture_.GetSize() / 2 - SDL2pp::Point(1, 1) /* pixel perfect match */ );
+		renderer_.Copy(coin_texture_, SDL2pp::NullOpt, coin - SDL2pp::Point(camerarect.x, camerarect.y) - coin_texture_.GetSize() / 2 - SDL2pp::Point(1, 1) /* pixel perfect match */ );
 
 	// draw player
 	SDL2pp::Point player_size(29, 59);
-	renderer_.Copy(player_texture_, SDL2pp::Rect(SDL2pp::Point(0, 0), player_size), SDL2pp::Point(rect.w / 2, rect.h / 2) - player_size / 2 - SDL2pp::Point(1, 1));
+	renderer_.Copy(player_texture_, SDL2pp::Rect(SDL2pp::Point(0, 0), player_size), SDL2pp::Point(camerarect.w / 2, camerarect.h / 2) - player_size / 2 - SDL2pp::Point(1, 1));
 }
 
 const std::vector<SDL2pp::Point> Game::coin_locations_ = {

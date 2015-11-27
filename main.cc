@@ -38,12 +38,6 @@ int main(int /*argc*/, char** /*argv*/) try {
 
 	Game game(renderer);
 
-	float xpos = 512106;
-	float ypos = -549612;
-
-	float xspeed = 0.0;
-	float yspeed = 0.0;
-
 	unsigned int prev_ticks = SDL_GetTicks();
 
 	// Main loop
@@ -62,48 +56,43 @@ int main(int /*argc*/, char** /*argv*/) try {
 				case SDLK_ESCAPE: case SDLK_q:
 					return 0;
 				case SDLK_LEFT:
-					xspeed = -1.0f;
+					game.SetActionFlag(Game::LEFT);
 					break;
 				case SDLK_RIGHT:
-					xspeed = 1.0f;
+					game.SetActionFlag(Game::RIGHT);
 					break;
 				case SDLK_UP:
-					yspeed = -1.0f;
+					game.SetActionFlag(Game::UP);
 					break;
 				case SDLK_DOWN:
-					yspeed = 1.0f;
+					game.SetActionFlag(Game::DOWN);
 					break;
 				}
 			} else if (event.type == SDL_KEYUP) {
 				switch (event.key.keysym.sym) {
 				case SDLK_LEFT:
+					game.ClearActionFlag(Game::LEFT);
+					break;
 				case SDLK_RIGHT:
-					xspeed = 0.0f;
+					game.ClearActionFlag(Game::RIGHT);
 					break;
 				case SDLK_UP:
+					game.ClearActionFlag(Game::UP);
+					break;
 				case SDLK_DOWN:
-					yspeed = 0.0f;
+					game.ClearActionFlag(Game::DOWN);
 					break;
 				}
 			}
 		}
 
-		// Move
-		xpos += xspeed * frame_delta;
-		ypos += yspeed * frame_delta;
-
-		if (xpos < 475136)
-			xpos = 475136;
-		if (xpos > 567295)
-			xpos = 567295;
+		game.Update((float)frame_delta);
 
 		// Render
 		renderer.SetDrawColor(255, 255, 255);
 		renderer.Clear();
 
-		SDL2pp::Rect view_rect(SDL2pp::Point((int)xpos, (int)ypos) - window.GetSize() / 2, window.GetSize());
-
-		game.Render(view_rect);
+		game.Render();
 
 		renderer.Present();
 

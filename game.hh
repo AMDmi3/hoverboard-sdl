@@ -31,22 +31,48 @@
 #include "tilecache.hh"
 
 class Game {
+public:
+	enum ActionFlags {
+		UP    = 0x01,
+		DOWN  = 0x02,
+		LEFT  = 0x04,
+		RIGHT = 0x08,
+	};
+
 private:
 	const static std::vector<SDL2pp::Point> coin_locations_;
+	constexpr static int start_player_x_ = 512106;
+	constexpr static int start_player_y_ = -549612;
+
+	constexpr static int left_world_bound_ = 475136;
+	constexpr static int right_world_bound_ = 567295;
 
 private:
 	SDL2pp::Renderer& renderer_;
 
+	// Resources
 	SDL2pp::Texture coin_texture_;
 	SDL2pp::Texture player_texture_;
 
 	TileCache tc_;
 
+	// Game state
+	int action_flags_;
+
+	float player_x_;
+	float player_y_;
+
 public:
 	Game(SDL2pp::Renderer& renderer);
 	~Game();
 
-	void Render(SDL2pp::Rect rect);
+	void SetActionFlag(int flag);
+	void ClearActionFlag(int flag);
+
+	SDL2pp::Rect GetCamera() const;
+
+	void Update(float delta_t);
+	void Render();//const SDL2pp::Rect& viewport);
 };
 
 #endif // GAME_HH
