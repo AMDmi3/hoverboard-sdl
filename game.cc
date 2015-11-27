@@ -35,7 +35,8 @@ Game::Game(SDL2pp::Renderer& renderer)
 	  tc_(renderer),
 	  action_flags_(0),
 	  player_x_(start_player_x_),
-	  player_y_(start_player_y_) {
+	  player_y_(start_player_y_),
+	  coins_(coin_locations_) {
 }
 
 Game::~Game() {
@@ -77,11 +78,12 @@ SDL2pp::Rect Game::GetCoinRect(const SDL2pp::Point& coin) const {
 }
 
 void Game::Update(float delta_t) {
-	const float speed = 1.0;
+	static const float speed = 1.0;
 
 	float xspeed = 0.0;
 	float yspeed = 0.0;
 
+	// Process player movement
 	if (action_flags_ & UP)
 		yspeed -= speed;
 	if (action_flags_ & DOWN)
@@ -94,11 +96,19 @@ void Game::Update(float delta_t) {
 	player_x_ += xspeed * delta_t;
 	player_y_ += yspeed * delta_t;
 
+	// Limit world
 	if (player_x_ < left_world_bound_)
 		player_x_ = left_world_bound_;
 	if (player_y_ > right_world_bound_)
 		player_y_ = right_world_bound_;
 
+	// Player rectangle
+	SDL2pp::Rect player_rect = GetPlayerRect();
+
+	// Collect coins
+	coins_.remove_if([&](const SDL2pp::Point& coin){ return player_rect.Intersects(GetCoinRect(coin)); } );
+
+	// Update tile cache
 	tc_.UpdateCache(GetCameraRect().GetExtension(512));
 }
 
@@ -108,14 +118,18 @@ void Game::Render() {
 	tc_.Render(camerarect);
 
 	// draw coins
-	for (auto& coin : coin_locations_)
+	for (auto& coin : coins_)
 		renderer_.Copy(coin_texture_, SDL2pp::NullOpt, GetCoinRect(coin) - SDL2pp::Point(camerarect.x, camerarect.y));
 
 	// draw player
 	renderer_.Copy(player_texture_, SDL2pp::Rect(0, 0, GetPlayerRect().w, GetPlayerRect().h), GetPlayerRect() - SDL2pp::Point(camerarect.x, camerarect.y));
 }
 
-const std::vector<SDL2pp::Point> Game::coin_locations_ = {
+void Game::ResetCoins() {
+	coins_ = coin_locations_;
+};
+
+const Game::CoinList Game::coin_locations_ = {
 	{537027, -560249},
 	{525689, -560616},
 	{526077, -560616},

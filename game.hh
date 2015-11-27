@@ -22,6 +22,7 @@
 
 #include <map>
 #include <set>
+#include <list>
 #include <vector>
 
 #include <SDL2pp/Rect.hh>
@@ -40,7 +41,11 @@ public:
 	};
 
 private:
-	const static std::vector<SDL2pp::Point> coin_locations_;
+	typedef std::list<SDL2pp::Point> CoinList;
+
+private:
+	const static CoinList coin_locations_;
+
 	constexpr static int start_player_x_ = 512106;
 	constexpr static int start_player_y_ = -549612;
 
@@ -67,6 +72,8 @@ private:
 	float player_x_;
 	float player_y_;
 
+	CoinList coins_;
+
 public:
 	Game(SDL2pp::Renderer& renderer);
 	~Game();
@@ -80,6 +87,8 @@ public:
 
 	void Update(float delta_t);
 	void Render();//const SDL2pp::Rect& viewport);
+
+	void ResetCoins();
 };
 
 #endif // GAME_HH
