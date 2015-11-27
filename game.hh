@@ -43,6 +43,18 @@ public:
 		RIGHT = 0x08,
 	};
 
+	enum class PlayerDirection {
+		FACING_LEFT,
+		FACING_RIGHT,
+	};
+
+	enum class PlayerState {
+		STILL      = 0,
+		ASCENDING  = 1,
+		MOVING     = 2,
+		DESCENDING = 3,
+	};
+
 private:
 	typedef std::list<SDL2pp::Point> CoinList;
 
@@ -59,6 +71,8 @@ private:
 	constexpr static int player_height_ = 59;
 
 	constexpr static int coin_size_ = 25;
+
+	constexpr static float player_turn_speed_ = 20.0f;
 
 	constexpr static SDL2pp::Rect deposit_rect_ = SDL2pp::Rect::FromCorners(512257, -549650, 512309, -549584);
 	constexpr static SDL2pp::Rect play_area_rect_ = SDL2pp::Rect::FromCorners(511484, -550619, 513026, -549568);
@@ -98,6 +112,10 @@ private:
 
 	float player_x_ = start_player_x_;
 	float player_y_ = start_player_y_;
+
+	float player_direction_ = 1.0f; // [-1.0..1.0]
+	PlayerDirection player_target_direction_ = PlayerDirection::FACING_RIGHT;
+	PlayerState player_state_ = PlayerState::STILL;
 
 	CoinList coins_;
 

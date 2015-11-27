@@ -22,11 +22,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <SDL2pp/Surface.hh>
-
 #include <memory>
-
 #include <sstream>
+#include <cmath>
+
+#include <SDL2pp/Surface.hh>
 
 Game::Game(SDL2pp::Renderer& renderer)
 	: renderer_(renderer),
@@ -99,10 +99,14 @@ void Game::Update(float delta_t) {
 		yspeed -= speed;
 	if (action_flags_ & DOWN)
 		yspeed += speed;
-	if (action_flags_ & LEFT)
+	if (action_flags_ & LEFT) {
+		player_target_direction_ = PlayerDirection::FACING_LEFT;
 		xspeed -= speed;
-	if (action_flags_ & RIGHT)
+	}
+	if (action_flags_ & RIGHT) {
+		player_target_direction_ = PlayerDirection::FACING_RIGHT;
 		xspeed += speed;
+	}
 
 	if (action_flags_)
 		player_moved_ = true;
@@ -115,6 +119,21 @@ void Game::Update(float delta_t) {
 		player_x_ += left_world_bound_ - GetPlayerRect().x;
 	if (GetPlayerRect().GetX2() > right_world_bound_)
 		player_x_ -= GetPlayerRect().GetX2() - right_world_bound_;
+
+	// Calculate player state
+	if (player_target_direction_ == PlayerDirection::FACING_LEFT)
+		player_direction_ = std::max(player_direction_ - player_turn_speed_ * delta_t, -1.0f);
+	else
+		player_direction_ = std::min(player_direction_ + player_turn_speed_ * delta_t, 1.0f);
+
+	if (yspeed < 0.0f)
+		player_state_ = PlayerState::ASCENDING;
+	else if (yspeed > 0.0f)
+		player_state_ = PlayerState::DESCENDING;
+	else if (xspeed != 0.0f)
+		player_state_ = PlayerState::MOVING;
+	else
+		player_state_ = PlayerState::STILL;
 
 	// Player rectangle
 	SDL2pp::Rect player_rect = GetPlayerRect();
@@ -154,7 +173,17 @@ void Game::Render() {
 		renderer_.Copy(coin_texture_, SDL2pp::NullOpt, GetCoinRect(coin) - SDL2pp::Point(camerarect.x, camerarect.y));
 
 	// draw player
-	renderer_.Copy(player_texture_, SDL2pp::Rect(0, 0, GetPlayerRect().w, GetPlayerRect().h), GetPlayerRect() - SDL2pp::Point(camerarect.x, camerarect.y));
+	{
+		int player_rect_shrink = (int)((float)GetPlayerRect().w / 2.0f * (1.0f - std::abs(player_direction_)));
+		int flipflag = (player_direction_ < 0.0f) ? SDL_FLIP_HORIZONTAL : 0;
+		renderer_.Copy(
+				player_texture_,
+				SDL2pp::Rect(GetPlayerRect().w * (int)player_state_, 0, GetPlayerRect().w, GetPlayerRect().h),
+				GetPlayerRect().GetExtension(-player_rect_shrink, 0) - SDL2pp::Point(camerarect.x, camerarect.y),
+				0.0f,
+				SDL2pp::NullOpt,
+				flipflag);
+	}
 
 	// draw messages
 	if (std::chrono::steady_clock::now() < deposit_message_expiration_) {
