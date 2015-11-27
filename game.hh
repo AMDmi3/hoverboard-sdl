@@ -47,6 +47,11 @@ private:
 	constexpr static int left_world_bound_ = 475136;
 	constexpr static int right_world_bound_ = 567295;
 
+	constexpr static int player_width_ = 29;
+	constexpr static int player_height_ = 59;
+
+	constexpr static int coin_size_ = 25;
+
 private:
 	SDL2pp::Renderer& renderer_;
 
@@ -69,7 +74,9 @@ public:
 	void SetActionFlag(int flag);
 	void ClearActionFlag(int flag);
 
-	SDL2pp::Rect GetCamera() const;
+	SDL2pp::Rect GetCameraRect() const;
+	SDL2pp::Rect GetPlayerRect() const;
+	SDL2pp::Rect GetCoinRect(const SDL2pp::Point& coin) const;
 
 	void Update(float delta_t);
 	void Render();//const SDL2pp::Rect& viewport);

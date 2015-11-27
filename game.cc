@@ -49,8 +49,31 @@ void Game::ClearActionFlag(int flag) {
 	action_flags_ &= ~flag;
 }
 
-SDL2pp::Rect Game::GetCamera() const {
-	return SDL2pp::Rect(SDL2pp::Point((int)player_x_, (int)player_y_) - renderer_.GetOutputSize() / 2, renderer_.GetOutputSize());
+SDL2pp::Rect Game::GetCameraRect() const {
+	return SDL2pp::Rect(
+			(int)player_x_ - renderer_.GetOutputWidth() / 2,
+			(int)player_y_ - renderer_.GetOutputHeight() / 2,
+			renderer_.GetOutputWidth(),
+			renderer_.GetOutputHeight()
+		);
+}
+
+SDL2pp::Rect Game::GetPlayerRect() const {
+	return SDL2pp::Rect(
+			(int)player_x_ - player_width_ + player_width_ / 2,
+			(int)player_y_ - player_height_ + player_height_ / 2,
+			player_width_,
+			player_height_
+		);
+}
+
+SDL2pp::Rect Game::GetCoinRect(const SDL2pp::Point& coin) const {
+	return SDL2pp::Rect(
+			(int)coin.x - coin_size_ + coin_size_ / 2,
+			(int)coin.y - coin_size_ + coin_size_ / 2,
+			coin_size_,
+			coin_size_
+		);
 }
 
 void Game::Update(float delta_t) {
@@ -76,21 +99,20 @@ void Game::Update(float delta_t) {
 	if (player_y_ > right_world_bound_)
 		player_y_ = right_world_bound_;
 
-	tc_.UpdateCache(GetCamera().GetExtension(512));
+	tc_.UpdateCache(GetCameraRect().GetExtension(512));
 }
 
 void Game::Render() {
-	SDL2pp::Rect camerarect = GetCamera();
+	SDL2pp::Rect camerarect = GetCameraRect();
 
 	tc_.Render(camerarect);
 
 	// draw coins
 	for (auto& coin : coin_locations_)
-		renderer_.Copy(coin_texture_, SDL2pp::NullOpt, coin - SDL2pp::Point(camerarect.x, camerarect.y) - coin_texture_.GetSize() / 2 - SDL2pp::Point(1, 1) /* pixel perfect match */ );
+		renderer_.Copy(coin_texture_, SDL2pp::NullOpt, GetCoinRect(coin) - SDL2pp::Point(camerarect.x, camerarect.y));
 
 	// draw player
-	SDL2pp::Point player_size(29, 59);
-	renderer_.Copy(player_texture_, SDL2pp::Rect(SDL2pp::Point(0, 0), player_size), SDL2pp::Point(camerarect.w / 2, camerarect.h / 2) - player_size / 2 - SDL2pp::Point(1, 1));
+	renderer_.Copy(player_texture_, SDL2pp::Rect(0, 0, GetPlayerRect().w, GetPlayerRect().h), GetPlayerRect() - SDL2pp::Point(camerarect.x, camerarect.y));
 }
 
 const std::vector<SDL2pp::Point> Game::coin_locations_ = {
