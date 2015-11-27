@@ -74,7 +74,7 @@ private:
 
 	constexpr static float player_turn_speed_ = 20.0f;
 
-	constexpr static SDL2pp::Rect deposit_rect_ = SDL2pp::Rect::FromCorners(512257, -549650, 512309, -549584);
+	constexpr static SDL2pp::Rect deposit_area_rect_ = SDL2pp::Rect::FromCorners(512257, -549650, 512309, -549584);
 	constexpr static SDL2pp::Rect play_area_rect_ = SDL2pp::Rect::FromCorners(511484, -550619, 513026, -549568);
 
 private:
@@ -104,7 +104,7 @@ private:
 
 	std::chrono::steady_clock::time_point session_start_;
 
-	bool is_depositing_ = false;
+	bool is_in_deposit_area_ = false;
 	bool is_in_play_area_ = true;
 
 	// Game state

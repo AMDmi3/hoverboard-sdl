@@ -142,12 +142,12 @@ void Game::Update(float delta_t) {
 	coins_.remove_if([&](const SDL2pp::Point& coin){ return player_rect.Intersects(GetCoinRect(coin)); } );
 
 	// Deposit coins
-	if (player_rect.Intersects(deposit_rect_)) {
-		if (!is_depositing_)
+	if (player_rect.Intersects(deposit_area_rect_)) {
+		if (!is_in_deposit_area_)
 			DepositCoins();
-		is_depositing_ = true;
+		is_in_deposit_area_ = true;
 	} else {
-		is_depositing_ = false;
+		is_in_deposit_area_ = false;
 	}
 
 	// Handle player leaving play area
@@ -452,5 +452,5 @@ const Game::CoinList Game::coin_locations_ = {
 	{529300, -560287}
 };
 
-constexpr SDL2pp::Rect Game::deposit_rect_;
+constexpr SDL2pp::Rect Game::deposit_area_rect_;
 constexpr SDL2pp::Rect Game::play_area_rect_;
