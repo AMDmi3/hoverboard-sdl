@@ -22,16 +22,17 @@ ADD_DEFINITIONS(-DDATADIR="${PROJECT_SOURCE_DIR}/data")
 
 # sources
 SET(SOURCES
-	main.cc
+	coins.cc
 	game.cc
-	tiles.cc
+	main.cc
 	tilecache.cc
+	tiles.cc
 )
 
 SET(HEADERS
 	game.hh
-	tiles.hh
 	tilecache.hh
+	tiles.hh
 )
 
 # binary
