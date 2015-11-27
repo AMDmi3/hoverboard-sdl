@@ -82,18 +82,18 @@ private:
 
 	TileCache tc_;
 
-	// Messages
+	// Message-related statistics
 	bool player_moved_ = false;
 
 	std::chrono::steady_clock::time_point deposit_message_expiration_;
 	std::chrono::steady_clock::time_point playarea_leave_moment_;
 
-	// Game state
 	std::chrono::steady_clock::time_point session_start_;
 
 	bool is_depositing_ = false;
 	bool is_in_play_area_ = true;
 
+	// Game state
 	int action_flags_ = 0;
 
 	float player_x_ = start_player_x_;
