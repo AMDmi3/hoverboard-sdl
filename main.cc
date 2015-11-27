@@ -88,7 +88,7 @@ int main(int /*argc*/, char** /*argv*/) try {
 			}
 		}
 
-		game.Update((float)frame_delta);
+		game.Update((float)frame_delta / 1000.0f);
 
 		// Render
 		renderer.SetDrawColor(255, 255, 255);

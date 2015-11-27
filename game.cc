@@ -89,10 +89,10 @@ SDL2pp::Rect Game::GetCoinRect(const SDL2pp::Point& coin) const {
 }
 
 void Game::Update(float delta_t) {
-	static const float speed = 1.0;
+	static const float speed = 1000.0f;
 
-	float xspeed = 0.0;
-	float yspeed = 0.0;
+	float xspeed = 0.0f;
+	float yspeed = 0.0f;
 
 	// Process player movement
 	if (action_flags_ & UP)
