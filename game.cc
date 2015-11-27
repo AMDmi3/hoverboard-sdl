@@ -108,6 +108,10 @@ void Game::Update(float delta_t) {
 	// Collect coins
 	coins_.remove_if([&](const SDL2pp::Point& coin){ return player_rect.Intersects(GetCoinRect(coin)); } );
 
+	// Deposit coins
+	if (player_rect.Intersects(deposit_rect_))
+		DepositCoins();
+
 	// Update tile cache
 	tc_.UpdateCache(GetCameraRect().GetExtension(512));
 }
@@ -125,9 +129,9 @@ void Game::Render() {
 	renderer_.Copy(player_texture_, SDL2pp::Rect(0, 0, GetPlayerRect().w, GetPlayerRect().h), GetPlayerRect() - SDL2pp::Point(camerarect.x, camerarect.y));
 }
 
-void Game::ResetCoins() {
+void Game::DepositCoins() {
 	coins_ = coin_locations_;
-};
+}
 
 const Game::CoinList Game::coin_locations_ = {
 	{537027, -560249},
@@ -300,3 +304,5 @@ const Game::CoinList Game::coin_locations_ = {
 	{528673, -559748},
 	{529300, -560287}
 };
+
+const SDL2pp::Rect Game::deposit_rect_;

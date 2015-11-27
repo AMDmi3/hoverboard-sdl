@@ -57,6 +57,8 @@ private:
 
 	constexpr static int coin_size_ = 25;
 
+	constexpr static SDL2pp::Rect deposit_rect_ = SDL2pp::Rect::FromCorners(512257, -549650, 512309, -549584);
+
 private:
 	SDL2pp::Renderer& renderer_;
 
@@ -88,7 +90,7 @@ public:
 	void Update(float delta_t);
 	void Render();//const SDL2pp::Rect& viewport);
 
-	void ResetCoins();
+	void DepositCoins();
 };
 
 #endif // GAME_HH
