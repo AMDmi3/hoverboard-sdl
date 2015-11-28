@@ -30,6 +30,7 @@
 
 constexpr SDL2pp::Rect Game::deposit_area_rect_;
 constexpr SDL2pp::Rect Game::play_area_rect_;
+constexpr float Game::player_max_speed_;
 
 Game::Game(SDL2pp::Renderer& renderer)
 	: renderer_(renderer),
@@ -93,30 +94,59 @@ SDL2pp::Rect Game::GetCoinRect(const SDL2pp::Point& coin) const {
 }
 
 void Game::Update(float delta_t) {
-	static const float speed = 1000.0f;
+	// All original game constants work at 60 fps fixed frame
+	// rate and do not take real frame time into account, so
+	// we have to adjust these for our arbitrary fps.
+	//
+	// Linear values such as velocity may be converted from
+	// original [units per frame] to our [units per second]
+	// by simply dividing by original frame time and
+	// multiplying by our frame time.
+	//
+	// Drag handling is a bit more complex, as it uses non-linear
+	// progression ("speed *= 1 - drag" on each frame). Because
+	// of that, it's asymptote (e.g. maximal speed) depends on
+	// frame rate. We derive correction formula for it from from
+	// a formula of sum of power series:
+	//
+	// vmax = (1 - drag) * acceleration / drag
+	//
+	// Next, we just derive corrected drag from the fact that
+	// while acceleration changes by `fps_correction', vmax
+	// should stay the same.
+	//
+	// To negate other effects of different time quantization
+	// (which still give about +/- 10% position offset for
+	// 30/1000 fps frame limiter may be tuned as well).
 
-	float xspeed = 0.0f;
-	float yspeed = 0.0f;
+	const float fps_correction = 60.0f * delta_t;
+	const float corrected_drag = drag_ * fps_correction / (1.0f - drag_ + drag_ * fps_correction);
 
 	// Process player movement
-	if (action_flags_ & UP)
-		yspeed -= speed;
-	if (action_flags_ & DOWN)
-		yspeed += speed;
+	if (action_flags_ & UP) {
+		if (!(prev_action_flags_ & UP))
+			player_yvel_ = player_jump_force_;
+	}
 	if (action_flags_ & LEFT) {
 		player_target_direction_ = PlayerDirection::FACING_LEFT;
-		xspeed -= speed;
+		player_xvel_ -= player_acceleration_ * fps_correction;
 	}
 	if (action_flags_ & RIGHT) {
 		player_target_direction_ = PlayerDirection::FACING_RIGHT;
-		xspeed += speed;
+		player_xvel_ += player_acceleration_ * fps_correction;
 	}
+
+	player_x_ += player_xvel_ * fps_correction;
+	player_y_ += player_yvel_ * fps_correction;
+
+	player_xvel_ *= 1.0 - corrected_drag;
+	player_yvel_ += gravity_ * fps_correction;
+
+	player_xvel_ = std::max(-player_max_speed_, std::min(player_xvel_, player_max_speed_));
+	player_yvel_ = std::max(-player_max_speed_, std::min(player_yvel_, player_max_speed_));
 
 	if (action_flags_)
 		player_moved_ = true;
-
-	player_x_ += xspeed * delta_t;
-	player_y_ += yspeed * delta_t;
 
 	// Limit world
 	if (GetPlayerRect().x < left_world_bound_)
@@ -130,11 +160,11 @@ void Game::Update(float delta_t) {
 	else
 		player_direction_ = std::min(player_direction_ + player_turn_speed_ * delta_t, 1.0f);
 
-	if (yspeed < 0.0f)
+	if (player_yvel_ < 0.0f)
 		player_state_ = PlayerState::ASCENDING;
-	else if (yspeed > 0.0f)
+	else if (player_yvel_ > 0.0f)
 		player_state_ = PlayerState::DESCENDING;
-	else if (xspeed != 0.0f)
+	else if (player_xvel_ != 0.0f)
 		player_state_ = PlayerState::MOVING;
 	else
 		player_state_ = PlayerState::STILL;
@@ -165,6 +195,8 @@ void Game::Update(float delta_t) {
 
 	// Update tile cache
 	tile_cache_.UpdateCache(GetCameraRect().GetExtension(512));
+
+	prev_action_flags_ = action_flags_;
 }
 
 void Game::Render() {

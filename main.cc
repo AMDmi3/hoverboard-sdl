@@ -99,7 +99,7 @@ int main(int /*argc*/, char** /*argv*/) try {
 		renderer.Present();
 
 		// Frame limiter
-		SDL_Delay(1);
+		SDL_Delay(5);
 	}
 
 	return 0;

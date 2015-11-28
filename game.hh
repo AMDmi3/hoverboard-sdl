@@ -74,6 +74,13 @@ private:
 
 	constexpr static float player_turn_speed_ = 20.0f;
 
+	constexpr static float player_acceleration_ = 0.85f;
+	constexpr static float player_max_speed_ = 20.0f;
+	constexpr static float player_jump_force_ = -10.0f;
+
+	constexpr static float drag_ = 0.15f;
+	constexpr static float gravity_ = 0.3f;
+
 	constexpr static SDL2pp::Rect deposit_area_rect_ = SDL2pp::Rect::FromCorners(512257, -549650, 512309, -549584);
 	constexpr static SDL2pp::Rect play_area_rect_ = SDL2pp::Rect::FromCorners(511484, -550619, 513026, -549568);
 
@@ -109,9 +116,13 @@ private:
 
 	// Game state
 	int action_flags_ = 0;
+	int prev_action_flags_ = 0;
 
 	float player_x_ = start_player_x_;
 	float player_y_ = start_player_y_;
+
+	float player_xvel_ = 0.0f;
+	float player_yvel_ = 0.0f;
 
 	float player_direction_ = 1.0f; // [-1.0..1.0]
 	PlayerDirection player_target_direction_ = PlayerDirection::FACING_RIGHT;
