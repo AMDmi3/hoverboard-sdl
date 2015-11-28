@@ -29,8 +29,6 @@
 
 #include <SDL2pp/Surface.hh>
 
-#include "tiles.hh"
-
 std::string TileCache::MakeTilePath(const SDL2pp::Point& coords) {
 	std::stringstream filename;
 	filename << DATADIR << "/" << coords.x << "/" << coords.y << ".png";
@@ -108,14 +106,10 @@ void TileCache::SetCacheSize(size_t cache_size) {
 }
 
 void TileCache::PreloadTilesSync(const SDL2pp::Rect& rect) {
-	SDL2pp::Point start_tile = Tile::TileForPoint(SDL2pp::Point(rect.x, rect.y));
-	SDL2pp::Point end_tile = Tile::TileForPoint(SDL2pp::Point(rect.GetX2(), rect.GetY2()));
-
-	SDL2pp::Point tilecoord;
-	for (tilecoord.x = start_tile.x; tilecoord.x <= end_tile.x; tilecoord.x++)
-		for (tilecoord.y = start_tile.y; tilecoord.y <= end_tile.y; tilecoord.y++)
+	ProcessTilesInRect(rect, [this](const SDL2pp::Point tilecoord) {
 			if (tiles_.find(tilecoord) == tiles_.end())
 				CreateTile(tilecoord, LoadTileData(tilecoord));
+		});
 }
 
 void TileCache::UpdateCache(const SDL2pp::Rect& rect) {
@@ -133,16 +127,12 @@ void TileCache::UpdateCache(const SDL2pp::Rect& rect) {
 		// Next add all missing tiles to the queue
 		std::list<SDL2pp::Point> missing_tiles;
 
-		SDL2pp::Point start_tile = Tile::TileForPoint(SDL2pp::Point(rect.x, rect.y));
-		SDL2pp::Point end_tile = Tile::TileForPoint(SDL2pp::Point(rect.GetX2(), rect.GetY2()));
-
-		SDL2pp::Point tilecoord;
-		for (tilecoord.x = start_tile.x; tilecoord.x <= end_tile.x; tilecoord.x++)
-			for (tilecoord.y = start_tile.y; tilecoord.y <= end_tile.y; tilecoord.y++)
+		ProcessTilesInRect(rect, [this, &missing_tiles, &seen_tiles](const SDL2pp::Point& tilecoord) {
 				if (tiles_.find(tilecoord) == tiles_.end() && (!currently_loading_ || *currently_loading_ != tilecoord))
 					missing_tiles.push_back(tilecoord);
 				else
 					seen_tiles.insert(tilecoord);
+			});
 
 		// Update loader queue
 		loader_queue_.swap(missing_tiles);

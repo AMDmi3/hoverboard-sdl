@@ -31,6 +31,8 @@
 #include <SDL2pp/Surface.hh>
 #include <SDL2pp/Renderer.hh>
 
+#include "tiles.hh"
+
 class Tile;
 
 class TileCache {
@@ -59,6 +61,17 @@ private:
 	static std::string MakeTilePath(const SDL2pp::Point& coords);
 	static SurfacePtr LoadTileData(const SDL2pp::Point& coords);
 	void CreateTile(const SDL2pp::Point& coords, SurfacePtr surface);
+
+	template<class T>
+	void ProcessTilesInRect(const SDL2pp::Rect& rect, T processor) {
+		SDL2pp::Point start_tile = Tile::TileForPoint(SDL2pp::Point(rect.x, rect.y));
+		SDL2pp::Point end_tile = Tile::TileForPoint(SDL2pp::Point(rect.GetX2(), rect.GetY2()));
+
+		SDL2pp::Point tilecoord;
+		for (tilecoord.x = start_tile.x; tilecoord.x <= end_tile.x; tilecoord.x++)
+			for (tilecoord.y = start_tile.y; tilecoord.y <= end_tile.y; tilecoord.y++)
+				processor(tilecoord);
+	}
 
 public:
 	TileCache(SDL2pp::Renderer& renderer);
