@@ -44,6 +44,7 @@ Game::Game(SDL2pp::Renderer& renderer)
 	  tc_(renderer),
 	  session_start_(std::chrono::steady_clock::now()),
 	  coins_(coin_locations_) {
+	tc_.PreloadTilesSync(GetCameraRect());
 }
 
 Game::~Game() {

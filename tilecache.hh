@@ -66,6 +66,7 @@ public:
 
 	void SetCacheSize(size_t cache_size);
 
+	void PreloadTilesSync(const SDL2pp::Rect& rect);
 	void UpdateCache(const SDL2pp::Rect& rect);
 	void Render(const SDL2pp::Rect& rect);
 };

@@ -103,6 +103,17 @@ void TileCache::SetCacheSize(size_t cache_size) {
 	cache_size_ = cache_size;
 }
 
+void TileCache::PreloadTilesSync(const SDL2pp::Rect& rect) {
+	SDL2pp::Point start_tile = Tile::TileForPoint(SDL2pp::Point(rect.x, rect.y));
+	SDL2pp::Point end_tile = Tile::TileForPoint(SDL2pp::Point(rect.GetX2(), rect.GetY2()));
+
+	SDL2pp::Point tilecoord;
+	for (tilecoord.x = start_tile.x; tilecoord.x <= end_tile.x; tilecoord.x++)
+		for (tilecoord.y = start_tile.y; tilecoord.y <= end_tile.y; tilecoord.y++)
+			if (tiles_.find(tilecoord) == tiles_.end())
+				tiles_.insert(std::make_pair(tilecoord, CreateTile(tilecoord, LoadTileData(tilecoord))));
+}
+
 void TileCache::UpdateCache(const SDL2pp::Rect& rect) {
 	std::set<SDL2pp::Point> seen_tiles;
 
