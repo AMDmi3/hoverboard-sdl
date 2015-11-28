@@ -25,6 +25,7 @@
 #include <sstream>
 #include <set>
 #include <list>
+#include <cassert>
 
 #include <SDL2pp/Surface.hh>
 
@@ -56,15 +57,19 @@ TileCache::TilePtr TileCache::CreateTile(const SDL2pp::Point& coords, SurfacePtr
 TileCache::TileCache(SDL2pp::Renderer& renderer) : renderer_(renderer), cache_size_(64), finish_thread_(false) {
 	loader_thread_ = std::thread([this](){
 			std::unique_lock<std::mutex> lock(loader_queue_mutex_);
-			while (!finish_thread_) {
-				loader_queue_condvar_.wait(lock);
+			while (true) {
+				// wait on condvar until we should load something or must exit
+				loader_queue_condvar_.wait(lock, [&](){ return !loader_queue_.empty() || finish_thread_; } );
 
+				// finish the thread if requested
 				if (finish_thread_)
 					return;
 
-				if (loader_queue_.empty())
-					continue;
+				assert(!loader_queue_.empty());
 
+				// take first tile from the queue and load its data
+				// note that we load Surface and not a texture, so
+				// we don't access OpenGL from non-main thread
 				SDL2pp::Point current_tile = loader_queue_.front();
 				currently_loading_ = current_tile;
 
@@ -76,6 +81,8 @@ TileCache::TileCache(SDL2pp::Renderer& renderer) : renderer_(renderer), cache_si
 
 				lock.lock();
 
+				// save loaded tile into list so it's converted to
+				// texture from main thread later
 				loaded_list_.push_back(std::make_pair(current_tile, std::move(ptr)));
 				currently_loading_ = SDL2pp::NullOpt;
 			}
@@ -83,6 +90,7 @@ TileCache::TileCache(SDL2pp::Renderer& renderer) : renderer_(renderer), cache_si
 }
 
 TileCache::~TileCache() {
+	// signal worked thread to exit and join
 	{
 		std::lock_guard<std::mutex> lock(loader_queue_mutex_);
 		finish_thread_ = true;
