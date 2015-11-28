@@ -47,11 +47,15 @@ TileCache::SurfacePtr TileCache::LoadTileData(const SDL2pp::Point& coords) {
 	return SurfacePtr();
 }
 
-TileCache::TilePtr TileCache::CreateTile(const SDL2pp::Point& coords, SurfacePtr surface) {
+void TileCache::CreateTile(const SDL2pp::Point& coords, SurfacePtr surface) {
+	TilePtr new_tile;
+
 	if (surface)
-		return TilePtr(new TextureTile(coords, SDL2pp::Texture(renderer_, *surface)));
+		new_tile.reset(new TextureTile(coords, SDL2pp::Texture(renderer_, *surface)));
 	else
-		return TilePtr(new EmptyTile(coords));
+		new_tile.reset(new EmptyTile(coords));
+
+	tiles_.insert(std::make_pair(coords, std::move(new_tile)));
 }
 
 TileCache::TileCache(SDL2pp::Renderer& renderer) : renderer_(renderer), cache_size_(64), finish_thread_(false) {
@@ -111,7 +115,7 @@ void TileCache::PreloadTilesSync(const SDL2pp::Rect& rect) {
 	for (tilecoord.x = start_tile.x; tilecoord.x <= end_tile.x; tilecoord.x++)
 		for (tilecoord.y = start_tile.y; tilecoord.y <= end_tile.y; tilecoord.y++)
 			if (tiles_.find(tilecoord) == tiles_.end())
-				tiles_.insert(std::make_pair(tilecoord, CreateTile(tilecoord, LoadTileData(tilecoord))));
+				CreateTile(tilecoord, LoadTileData(tilecoord));
 }
 
 void TileCache::UpdateCache(const SDL2pp::Rect& rect) {
@@ -122,7 +126,7 @@ void TileCache::UpdateCache(const SDL2pp::Rect& rect) {
 
 		// First, materialize all freshly loaded tiles
 		for (auto& loaded : loaded_list_)
-			tiles_.insert(std::make_pair(loaded.first, CreateTile(loaded.first, std::move(loaded.second))));
+			CreateTile(loaded.first, std::move(loaded.second));
 
 		loaded_list_.clear();
 

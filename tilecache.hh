@@ -58,7 +58,7 @@ private:
 private:
 	static std::string MakeTilePath(const SDL2pp::Point& coords);
 	static SurfacePtr LoadTileData(const SDL2pp::Point& coords);
-	TilePtr CreateTile(const SDL2pp::Point& coords, SurfacePtr surface);
+	void CreateTile(const SDL2pp::Point& coords, SurfacePtr surface);
 
 public:
 	TileCache(SDL2pp::Renderer& renderer);
