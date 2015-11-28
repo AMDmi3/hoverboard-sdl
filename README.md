@@ -56,7 +56,7 @@ cmake . && make
 ## License
 
 * Code: GPLv3 or later, see COPYING
-* Assets by Randall Munroe, Creative Commons Attribution-NonCommercial 2.5 License, see [kxcd.com](https://xkcd.com/license.html).
+* Assets by Randall Munroe, Creative Commons Attribution-NonCommercial 2.5 License, see [xkcd.com](https://xkcd.com/license.html).
 
 The project also bundles third party software under its own licenses:
 
