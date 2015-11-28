@@ -94,7 +94,7 @@ private:
 	std::unique_ptr<SDL2pp::Texture> deposit_big_message_;
 	std::unique_ptr<SDL2pp::Texture> deposit_small_message_;
 
-	TileCache tc_;
+	TileCache tile_cache_;
 
 	// Message-related statistics
 	bool player_moved_ = false;

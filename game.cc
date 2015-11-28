@@ -41,10 +41,10 @@ Game::Game(SDL2pp::Renderer& renderer)
 	  font_40_(DATADIR "/xkcd-Regular.otf", 40),
 	  arrowkeys_message_(renderer_, font_18_.RenderText_Blended("use the arrow keys to move, esc/q to quit", SDL_Color{ 255, 255, 255, 192 })),
 	  playarea_message_(renderer_, font_40_.RenderText_Blended("RETURN TO THE PLAY AREA", SDL_Color{ 255, 0, 0, 255 } )),
-	  tc_(renderer),
+	  tile_cache_(renderer),
 	  session_start_(std::chrono::steady_clock::now()),
 	  coins_(coin_locations_) {
-	tc_.PreloadTilesSync(GetCameraRect());
+	tile_cache_.PreloadTilesSync(GetCameraRect());
 }
 
 Game::~Game() {
@@ -164,13 +164,13 @@ void Game::Update(float delta_t) {
 	}
 
 	// Update tile cache
-	tc_.UpdateCache(GetCameraRect().GetExtension(512));
+	tile_cache_.UpdateCache(GetCameraRect().GetExtension(512));
 }
 
 void Game::Render() {
 	SDL2pp::Rect camerarect = GetCameraRect();
 
-	tc_.Render(camerarect);
+	tile_cache_.Render(camerarect);
 
 	// draw coins
 	for (auto& coin : coins_)
