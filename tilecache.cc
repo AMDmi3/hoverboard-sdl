@@ -45,7 +45,7 @@ TileCache::SurfacePtr TileCache::LoadTileData(const SDL2pp::Point& coords) {
 	return SurfacePtr();
 }
 
-void TileCache::CreateTile(const SDL2pp::Point& coords, SurfacePtr surface) {
+TileCache::TileMap::iterator TileCache::CreateTile(const SDL2pp::Point& coords, SurfacePtr surface) {
 	TilePtr new_tile;
 
 	if (surface)
@@ -53,7 +53,7 @@ void TileCache::CreateTile(const SDL2pp::Point& coords, SurfacePtr surface) {
 	else
 		new_tile.reset(new EmptyTile(coords));
 
-	tiles_.insert(std::make_pair(coords, std::move(new_tile)));
+	return tiles_.insert(std::make_pair(coords, std::move(new_tile))).first;
 }
 
 TileCache::TileCache(SDL2pp::Renderer& renderer) : renderer_(renderer), cache_size_(64), finish_thread_(false) {

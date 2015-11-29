@@ -39,11 +39,12 @@ class TileCache {
 private:
 	typedef std::unique_ptr<Tile> TilePtr;
 	typedef std::unique_ptr<SDL2pp::Surface> SurfacePtr;
+	typedef std::map<SDL2pp::Point, TilePtr> TileMap;
 
 private:
 	SDL2pp::Renderer& renderer_;
 
-	std::map<SDL2pp::Point, TilePtr> tiles_;
+	TileMap tiles_;
 	size_t cache_size_;
 
 	// background loader
@@ -60,7 +61,7 @@ private:
 private:
 	static std::string MakeTilePath(const SDL2pp::Point& coords);
 	static SurfacePtr LoadTileData(const SDL2pp::Point& coords);
-	void CreateTile(const SDL2pp::Point& coords, SurfacePtr surface);
+	TileMap::iterator CreateTile(const SDL2pp::Point& coords, SurfacePtr surface);
 
 	template<class T>
 	void ProcessTilesInRect(const SDL2pp::Rect& rect, T processor) {
