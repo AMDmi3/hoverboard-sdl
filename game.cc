@@ -160,11 +160,11 @@ void Game::Update(float delta_t) {
 	else
 		player_direction_ = std::min(player_direction_ + player_turn_speed_ * delta_t, 1.0f);
 
-	if (player_yvel_ < 0.0f)
+	if (player_yvel_ < -player_tangible_speed_)
 		player_state_ = PlayerState::ASCENDING;
-	else if (player_yvel_ > 0.0f)
+	else if (player_yvel_ > player_tangible_speed_)
 		player_state_ = PlayerState::DESCENDING;
-	else if (player_xvel_ != 0.0f)
+	else if (player_xvel_ < -player_tangible_speed_ || player_xvel_ > player_tangible_speed_)
 		player_state_ = PlayerState::MOVING;
 	else
 		player_state_ = PlayerState::STILL;

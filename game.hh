@@ -81,6 +81,8 @@ private:
 	constexpr static float drag_ = 0.15f;
 	constexpr static float gravity_ = 0.3f;
 
+	constexpr static float player_tangible_speed_ = 0.25f;
+
 	constexpr static SDL2pp::Rect deposit_area_rect_ = SDL2pp::Rect::FromCorners(512257, -549650, 512309, -549584);
 	constexpr static SDL2pp::Rect play_area_rect_ = SDL2pp::Rect::FromCorners(511484, -550619, 513026, -549568);
 
