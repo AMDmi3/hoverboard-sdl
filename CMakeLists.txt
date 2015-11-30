@@ -50,19 +50,19 @@ ENDIF(SYSTEMWIDE)
 
 # sources
 SET(SOURCES
-	coins.cc
-	game.cc
-	main.cc
-	tilecache.cc
-	tiles.cc
+	src/coins.cc
+	src/game.cc
+	src/main.cc
+	src/tilecache.cc
+	src/tiles.cc
 )
 
 SET(HEADERS
-	collision.hh
-	game.hh
-	passability.hh
-	tilecache.hh
-	tiles.hh
+	src/collision.hh
+	src/game.hh
+	src/passability.hh
+	src/tilecache.hh
+	src/tiles.hh
 )
 
 # binary
