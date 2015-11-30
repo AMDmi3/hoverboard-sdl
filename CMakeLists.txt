@@ -30,7 +30,9 @@ SET(SOURCES
 )
 
 SET(HEADERS
+	collision.hh
 	game.hh
+	passability.hh
 	tilecache.hh
 	tiles.hh
 )
