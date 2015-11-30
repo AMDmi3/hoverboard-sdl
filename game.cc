@@ -25,8 +25,11 @@
 #include <memory>
 #include <sstream>
 #include <cmath>
+#include <algorithm>
 
 #include <SDL2pp/Surface.hh>
+
+#include "collision.hh"
 
 constexpr SDL2pp::Rect Game::deposit_area_rect_;
 constexpr SDL2pp::Rect Game::play_area_rect_;
@@ -84,6 +87,20 @@ SDL2pp::Rect Game::GetPlayerRect() const {
 		);
 }
 
+SDL2pp::Rect Game::GetPlayerCollisionRect() const {
+	SDL2pp::Rect rect = GetPlayerRect();
+	rect.x += player_x1_margin_;
+	rect.y += player_y1_margin_;
+	rect.w -= player_x1_margin_ + player_x2_margin_;
+	rect.h -= player_y1_margin_ + player_y2_margin_;
+	return SDL2pp::Rect(
+			(int)player_x_ - player_width_ + player_width_ / 2,
+			(int)player_y_ - player_height_ + player_height_ / 2,
+			player_width_,
+			player_height_
+		);
+}
+
 SDL2pp::Rect Game::GetCoinRect(const SDL2pp::Point& coin) const {
 	return SDL2pp::Rect(
 			(int)coin.x - coin_size_ + coin_size_ / 2,
@@ -122,7 +139,7 @@ void Game::Update(float delta_t) {
 	const float fps_correction = 60.0f * delta_t;
 	const float corrected_drag = drag_ * fps_correction / (1.0f - drag_ + drag_ * fps_correction);
 
-	// Process player movement
+	// Velocity updates caused by player actions
 	if (action_flags_ & UP) {
 		if (!(prev_action_flags_ & UP))
 			player_yvel_ = player_jump_force_;
@@ -136,14 +153,47 @@ void Game::Update(float delta_t) {
 		player_xvel_ += player_acceleration_ * fps_correction;
 	}
 
-	player_x_ += player_xvel_ * fps_correction;
-	player_y_ += player_yvel_ * fps_correction;
-
+	// Velocity updates caused by world physics
 	player_xvel_ *= 1.0 - corrected_drag;
 	player_yvel_ += gravity_ * fps_correction;
 
 	player_xvel_ = std::max(-player_max_speed_, std::min(player_xvel_, player_max_speed_));
 	player_yvel_ = std::max(-player_max_speed_, std::min(player_yvel_, player_max_speed_));
+
+	// Velocity updates caused by collisions
+	CollisionInfo collisions_;
+	tile_cache_.UpdateCollisions(collisions_, GetPlayerCollisionRect(), (int)std::ceil(player_max_speed_));
+
+	if (collisions_.HasLeftCollision()) {
+		int dist_to_left = (collisions_.GetLeftCollision().x - GetPlayerCollisionRect().x + 1);
+		int step_height = GetPlayerCollisionRect().GetY2() - collisions_.GetLeftCollision().y + 1;
+
+		if (player_xvel_ < -player_speed_epsilon_ && player_xvel_ < -(float)dist_to_left && step_height <= max_step_height_ && player_yvel_ * fps_correction > -step_height)
+			player_yvel_ = -step_height / fps_correction;
+
+		player_xvel_ = std::max(player_xvel_, (float)dist_to_left);
+	}
+	if (collisions_.HasRightCollision()) {
+		int dist_to_right = collisions_.GetRightCollision().x - GetPlayerCollisionRect().GetX2() - 1;
+		int step_height = GetPlayerCollisionRect().GetY2() - collisions_.GetRightCollision().y + 1;
+
+		if (player_xvel_ > -player_speed_epsilon_ && player_xvel_ > (float)dist_to_right && step_height <= max_step_height_ && player_yvel_ * fps_correction > -step_height)
+			player_yvel_ = -step_height / fps_correction;
+
+		player_xvel_ = std::min(player_xvel_, (float)dist_to_right);
+	}
+	if (collisions_.HasTopCollision()) {
+		int dist_to_top = collisions_.GetTopCollision() - GetPlayerCollisionRect().y + 1;
+		player_yvel_ = std::max(player_yvel_, (float)dist_to_top);
+	}
+	if (collisions_.HasBottomCollision()) {
+		int dist_to_bottom = collisions_.GetBottomCollision() - GetPlayerCollisionRect().GetY2() - 1;
+		player_yvel_ = std::min(player_yvel_, (float)dist_to_bottom);
+	}
+
+	// Update player position
+	player_x_ += player_xvel_ * fps_correction;
+	player_y_ += player_yvel_ * fps_correction;
 
 	if (action_flags_)
 		player_moved_ = true;

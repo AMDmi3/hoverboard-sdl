@@ -34,6 +34,7 @@
 #include "tiles.hh"
 
 class Tile;
+class CollisionInfo;
 
 class TileCache {
 private:
@@ -83,6 +84,8 @@ public:
 	void PreloadTilesSync(const SDL2pp::Rect& rect);
 	void UpdateCache(const SDL2pp::Rect& rect);
 	void Render(const SDL2pp::Rect& rect);
+
+	void UpdateCollisions(CollisionInfo& collisions, const SDL2pp::Rect& rect, int distance);
 };
 
 #endif // TILECACHE_HH

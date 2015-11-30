@@ -27,7 +27,13 @@
 #include <list>
 #include <cassert>
 
+#include <SDL2/SDL_surface.h>
+
 #include <SDL2pp/Surface.hh>
+
+#include "tiles.hh"
+#include "collision.hh"
+#include "passability.hh"
 
 std::string TileCache::MakeTilePath(const SDL2pp::Point& coords) {
 	std::stringstream filename;
@@ -48,10 +54,34 @@ TileCache::SurfacePtr TileCache::LoadTileData(const SDL2pp::Point& coords) {
 TileCache::TileMap::iterator TileCache::CreateTile(const SDL2pp::Point& coords, SurfacePtr surface) {
 	TilePtr new_tile;
 
-	if (surface)
-		new_tile.reset(new TextureTile(coords, SDL2pp::Texture(renderer_, *surface)));
-	else
+	if (surface) {
+		PassabilityMap passability;
+
+		SDL2pp::Surface::LockHandle lock = surface->Lock();
+		unsigned char* line = static_cast<unsigned char*>(lock.GetPixels());
+		int pitch = lock.GetPitch();
+		int bytesperpixel = lock.GetFormat().BytesPerPixel;
+		SDL_Color* palette = surface->Get()->format->palette ? surface->Get()->format->palette->colors : nullptr;
+
+		for (int y = 0; y < 512; y++) {
+			unsigned char* pixel = line;
+			for (int x = 0; x < 512; x++) {
+				unsigned char color = *pixel;
+				if (palette)
+					color = palette[color].r;
+
+				if (color < 100 && !(color & 1))
+					passability.Set(x, y);
+
+				pixel += bytesperpixel;
+			}
+			line += pitch;
+		}
+
+		new_tile.reset(new TextureTile(coords, SDL2pp::Texture(renderer_, *surface), std::move(passability)));
+	} else {
 		new_tile.reset(new EmptyTile(coords));
+	}
 
 	return tiles_.insert(std::make_pair(coords, std::move(new_tile))).first;
 }
@@ -173,4 +203,16 @@ void TileCache::Render(const SDL2pp::Rect& rect) {
 				tileiter->second->Render(renderer_, rect);
 		}
 	}
+}
+
+void TileCache::UpdateCollisions(CollisionInfo& collisions, const SDL2pp::Rect& rect, int distance) {
+	ProcessTilesInRect(rect.GetExtension(distance), [&](const SDL2pp::Point& tilecoord) {
+			auto tile = tiles_.find(tilecoord);
+			if (tile == tiles_.end()) // while we can skip not loaded tiles for rendering, we can't for physics
+				tile = CreateTile(tilecoord, LoadTileData(tilecoord)); // so load needed tile synchronously
+			tile->second->CheckLeftCollision(collisions, SDL2pp::Rect(rect.x - distance, rect.y, distance, rect.h));
+			tile->second->CheckRightCollision(collisions, SDL2pp::Rect(rect.x + rect.w, rect.y, distance, rect.h));
+			tile->second->CheckTopCollision(collisions, SDL2pp::Rect(rect.x, rect.y - distance, rect.w, distance));
+			tile->second->CheckBottomCollision(collisions, SDL2pp::Rect(rect.x, rect.y + rect.h, rect.w, distance));
+		});
 }

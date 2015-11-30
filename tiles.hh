@@ -24,6 +24,10 @@
 #include <SDL2pp/Renderer.hh>
 #include <SDL2pp/Texture.hh>
 
+#include "passability.hh"
+
+class CollisionInfo;
+
 class Tile {
 protected:
 	static constexpr int image_size_ = 513;
@@ -51,6 +55,11 @@ public:
 	SDL2pp::Rect GetRect() const;
 
 	virtual void Render(SDL2pp::Renderer& renderer, const SDL2pp::Rect& viewport) = 0;
+
+	virtual void CheckLeftCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const = 0;
+	virtual void CheckRightCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const = 0;
+	virtual void CheckTopCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const = 0;
+	virtual void CheckBottomCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const = 0;
 };
 
 class EmptyTile : public Tile {
@@ -59,17 +68,28 @@ public:
 	virtual ~EmptyTile();
 
 	virtual void Render(SDL2pp::Renderer&, const SDL2pp::Rect&) final;
+
+	virtual void CheckLeftCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const final;
+	virtual void CheckRightCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const final;
+	virtual void CheckTopCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const final;
+	virtual void CheckBottomCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const final;
 };
 
 class TextureTile : public Tile {
 private:
 	SDL2pp::Texture texture_;
+	PassabilityMap passability_;
 
 public:
-	TextureTile(const SDL2pp::Point& coords, SDL2pp::Texture&& texture);
+	TextureTile(const SDL2pp::Point& coords, SDL2pp::Texture&& texture, PassabilityMap&& passability);
 	virtual ~TextureTile();
 
 	virtual void Render(SDL2pp::Renderer& renderer, const SDL2pp::Rect& viewport) final;
+
+	virtual void CheckLeftCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const final;
+	virtual void CheckRightCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const final;
+	virtual void CheckTopCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const final;
+	virtual void CheckBottomCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const final;
 };
 
 #endif // TILES_HH

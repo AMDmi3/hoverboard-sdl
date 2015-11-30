@@ -70,6 +70,11 @@ private:
 	constexpr static int player_width_ = 29;
 	constexpr static int player_height_ = 59;
 
+	constexpr static int player_x1_margin_ = 0;
+	constexpr static int player_y1_margin_ = 6;
+	constexpr static int player_x2_margin_ = 0;
+	constexpr static int player_y2_margin_ = 1;
+
 	constexpr static int coin_size_ = 25;
 
 	constexpr static float player_turn_speed_ = 20.0f;
@@ -82,6 +87,9 @@ private:
 	constexpr static float gravity_ = 0.3f;
 
 	constexpr static float player_tangible_speed_ = 0.25f;
+	constexpr static float player_speed_epsilon_ = 0.1f;
+
+	constexpr static int max_step_height_ = 5;
 
 	constexpr static SDL2pp::Rect deposit_area_rect_ = SDL2pp::Rect::FromCorners(512257, -549650, 512309, -549584);
 	constexpr static SDL2pp::Rect play_area_rect_ = SDL2pp::Rect::FromCorners(511484, -550619, 513026, -549568);
@@ -141,6 +149,7 @@ public:
 
 	SDL2pp::Rect GetCameraRect() const;
 	SDL2pp::Rect GetPlayerRect() const;
+	SDL2pp::Rect GetPlayerCollisionRect() const;
 	SDL2pp::Rect GetCoinRect(const SDL2pp::Point& coin) const;
 
 	void Update(float delta_t);

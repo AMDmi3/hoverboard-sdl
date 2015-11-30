@@ -19,6 +19,8 @@
 
 #include "tiles.hh"
 
+#include "collision.hh"
+
 Tile::Tile(const SDL2pp::Point& coords) : coords_(coords) {
 }
 
@@ -42,7 +44,19 @@ EmptyTile::~EmptyTile() {
 void EmptyTile::Render(SDL2pp::Renderer&, const SDL2pp::Rect&) {
 }
 
-TextureTile::TextureTile(const SDL2pp::Point& coords, SDL2pp::Texture&& texture) : Tile(coords), texture_(std::move(texture)) {
+void EmptyTile::CheckLeftCollision(CollisionInfo&, const SDL2pp::Rect&) const {
+}
+
+void EmptyTile::CheckRightCollision(CollisionInfo&, const SDL2pp::Rect&) const {
+}
+
+void EmptyTile::CheckTopCollision(CollisionInfo&, const SDL2pp::Rect&) const {
+}
+
+void EmptyTile::CheckBottomCollision(CollisionInfo&, const SDL2pp::Rect&) const {
+}
+
+TextureTile::TextureTile(const SDL2pp::Point& coords, SDL2pp::Texture&& texture, PassabilityMap&& passability) : Tile(coords), texture_(std::move(texture)), passability_(std::move(passability)) {
 }
 
 TextureTile::~TextureTile() {
@@ -56,4 +70,44 @@ void TextureTile::Render(SDL2pp::Renderer& renderer, const SDL2pp::Rect& viewpor
 	renderer.Copy(texture_,
 			SDL2pp::Rect(0, 0, tile_size_, tile_size_),
 			SDL2pp::Point(tilerect.x, tilerect.y) - SDL2pp::Point(viewport.x, viewport.y));
+}
+
+void TextureTile::CheckLeftCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const {
+	if (auto real_rect = rect.GetIntersection(GetRect())) {
+		SDL2pp::Point point;
+		for (point.y = real_rect->y; point.y <= real_rect->GetY2(); point.y++)
+			for (point.x = real_rect->x; point.x <= real_rect->GetX2(); point.x++)
+				if (passability_.Get(point.x - GetRect().x, point.y - GetRect().y))
+					coll.AddLeftCollision(point);
+	}
+}
+
+void TextureTile::CheckRightCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const {
+	if (auto real_rect = rect.GetIntersection(GetRect())) {
+		SDL2pp::Point point;
+		for (point.y = real_rect->y; point.y <= real_rect->GetY2(); point.y++)
+			for (point.x = real_rect->x; point.x <= real_rect->GetX2(); point.x++)
+				if (passability_.Get(point.x - GetRect().x, point.y - GetRect().y))
+					coll.AddRightCollision(point);
+	}
+}
+
+void TextureTile::CheckTopCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const {
+	if (auto real_rect = rect.GetIntersection(GetRect())) {
+		SDL2pp::Point point;
+		for (point.y = real_rect->y; point.y <= real_rect->GetY2(); point.y++)
+			for (point.x = real_rect->x; point.x <= real_rect->GetX2(); point.x++)
+				if (passability_.Get(point.x - GetRect().x, point.y - GetRect().y))
+					coll.AddTopCollision(point.y);
+	}
+}
+
+void TextureTile::CheckBottomCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const {
+	if (auto real_rect = rect.GetIntersection(GetRect())) {
+		SDL2pp::Point point;
+		for (point.y = real_rect->y; point.y <= real_rect->GetY2(); point.y++)
+			for (point.x = real_rect->x; point.x <= real_rect->GetX2(); point.x++)
+				if (passability_.Get(point.x - GetRect().x, point.y - GetRect().y))
+					coll.AddBottomCollision(point.y);
+	}
 }
