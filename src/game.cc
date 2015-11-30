@@ -48,7 +48,6 @@ Game::Game(SDL2pp::Renderer& renderer)
 	  tile_cache_(renderer),
 	  session_start_(std::chrono::steady_clock::now()),
 	  coins_(coin_locations_) {
-	tile_cache_.PreloadTilesSync(GetCameraRect());
 }
 
 Game::~Game() {
@@ -108,6 +107,10 @@ SDL2pp::Rect Game::GetCoinRect(const SDL2pp::Point& coin) const {
 			coin_size_,
 			coin_size_
 		);
+}
+
+void Game::LoadVisibleTiles() {
+	tile_cache_.PreloadTilesSync(GetCameraRect());
 }
 
 void Game::Update(float delta_t) {
