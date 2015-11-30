@@ -57,31 +57,31 @@ int main(int /*argc*/, char** /*argv*/) try {
 				switch (event.key.keysym.sym) {
 				case SDLK_ESCAPE: case SDLK_q:
 					return 0;
-				case SDLK_LEFT:
+				case SDLK_LEFT: case SDLK_a: case SDLK_h:
 					game.SetActionFlag(Game::LEFT);
 					break;
-				case SDLK_RIGHT:
+				case SDLK_RIGHT: case SDLK_d: case SDLK_l:
 					game.SetActionFlag(Game::RIGHT);
 					break;
-				case SDLK_UP:
+				case SDLK_UP: case SDLK_w: case SDLK_k:
 					game.SetActionFlag(Game::UP);
 					break;
-				case SDLK_DOWN:
+				case SDLK_DOWN: case SDLK_s: case SDLK_j:
 					game.SetActionFlag(Game::DOWN);
 					break;
 				}
 			} else if (event.type == SDL_KEYUP) {
 				switch (event.key.keysym.sym) {
-				case SDLK_LEFT:
+				case SDLK_LEFT: case SDLK_a: case SDLK_h:
 					game.ClearActionFlag(Game::LEFT);
 					break;
-				case SDLK_RIGHT:
+				case SDLK_RIGHT: case SDLK_d: case SDLK_l:
 					game.ClearActionFlag(Game::RIGHT);
 					break;
-				case SDLK_UP:
+				case SDLK_UP: case SDLK_w: case SDLK_k:
 					game.ClearActionFlag(Game::UP);
 					break;
-				case SDLK_DOWN:
+				case SDLK_DOWN: case SDLK_s: case SDLK_j:
 					game.ClearActionFlag(Game::DOWN);
 					break;
 				}
