@@ -4,6 +4,8 @@
 
 Desktop version of [xkcd 1608 "Hoverboard"](https://xkcd.com/1608/) game.
 
+![Screenshot](docs/screenshot.png)
+
 ## Why
 
 I'm a big fan of [xkcd](https://xkcd.com/) by Randall Munroe, and
