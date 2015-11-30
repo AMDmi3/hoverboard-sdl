@@ -26,6 +26,7 @@
 #include <set>
 #include <list>
 #include <cassert>
+#include <cmath>
 
 #include <SDL2/SDL_surface.h>
 
