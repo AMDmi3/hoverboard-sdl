@@ -23,11 +23,10 @@ So there's plenty of reasons to have a proper native application,
 and, given that Randall makes the art available under [CC-by-NC
 license](https://xkcd.com/license.html), I want to accomplish that.
 
-## Roadmap
-
-- [x] Proof of concept - just a scrollable map
-- [ ] Game elements - player, physics, coins
-- [ ] Additional improvements such as mentioned save/load
+I consider this a feature-complete reimplementation - it provides
+the complete experience of the original hame and only lacks some
+hidden features like Gandalf mode. The project is now focused on
+optimization and extra features (such as game state saving).
 
 ## Building
 
@@ -43,10 +42,16 @@ It's included into git repository as a submodule, so if you've
 obtained source through git, don't forget to run ```git submodule
 init && git submodule update```.
 
-To build the project, run:
+To build and run the game:
 
 ```
-cmake . && make
+cmake . && make && ./hoverboard
+```
+
+To install systemwide:
+
+```
+cmake -DCMAKE_INSTALL_PREFIX=/usr/local . && make && make install
 ```
 
 ## Author
