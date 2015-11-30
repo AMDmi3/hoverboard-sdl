@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Hoverboard
+Comment=xkcd 1608 "Hoverboard" game
+Icon=hoverboard
+Exec=hoverboard
+Categories=Game;AdventureGame;
