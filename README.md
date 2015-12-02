@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/AMDmi3/hoverboard-sdl.svg?branch=master)](https://travis-ci.org/AMDmi3/hoverboard-sdl)
 
-Desktop version of [xkcd 1608 "Hoverboard"](https://xkcd.com/1608/) game.
+Standalone version of [xkcd 1608 "Hoverboard"](https://xkcd.com/1608/) game.
 
 ![Screenshot](docs/screenshot.png)
 
