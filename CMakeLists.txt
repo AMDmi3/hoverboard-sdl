@@ -48,15 +48,14 @@ SET(SOURCES
 	src/game.cc
 	src/main.cc
 	src/tilecache.cc
-	src/tiles.cc
+	src/tile.cc
 )
 
 SET(HEADERS
 	src/collision.hh
 	src/game.hh
-	src/passability.hh
 	src/tilecache.hh
-	src/tiles.hh
+	src/tile.hh
 )
 
 # binary

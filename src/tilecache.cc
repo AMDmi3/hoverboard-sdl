@@ -19,73 +19,11 @@
 
 #include "tilecache.hh"
 
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <sstream>
 #include <set>
-#include <list>
 #include <cassert>
 #include <cmath>
 
-#include <SDL2/SDL_surface.h>
-
-#include <SDL2pp/Surface.hh>
-
-#include "tiles.hh"
 #include "collision.hh"
-#include "passability.hh"
-
-std::string TileCache::MakeTilePath(const SDL2pp::Point& coords) {
-	std::stringstream filename;
-	filename << DATADIR << "/" << coords.x << "/" << coords.y << ".png";
-	return filename.str();
-}
-
-TileCache::SurfacePtr TileCache::LoadTileData(const SDL2pp::Point& coords) {
-	std::string path = MakeTilePath(coords);
-
-	struct stat st;
-	if (stat(path.c_str(), &st) == 0)
-		return SurfacePtr(new SDL2pp::Surface(path));
-
-	return SurfacePtr();
-}
-
-TileCache::TileMap::iterator TileCache::CreateTile(const SDL2pp::Point& coords, SurfacePtr surface) {
-	TilePtr new_tile;
-
-	if (surface) {
-		PassabilityMap passability;
-
-		SDL2pp::Surface::LockHandle lock = surface->Lock();
-		unsigned char* line = static_cast<unsigned char*>(lock.GetPixels());
-		int pitch = lock.GetPitch();
-		int bytesperpixel = lock.GetFormat().BytesPerPixel;
-		SDL_Color* palette = surface->Get()->format->palette ? surface->Get()->format->palette->colors : nullptr;
-
-		for (int y = 0; y < 512; y++) {
-			unsigned char* pixel = line;
-			for (int x = 0; x < 512; x++) {
-				unsigned char color = *pixel;
-				if (palette)
-					color = palette[color].r;
-
-				if (color < 100 && !(color & 1))
-					passability.Set(x, y);
-
-				pixel += bytesperpixel;
-			}
-			line += pitch;
-		}
-
-		new_tile.reset(new TextureTile(coords, SDL2pp::Texture(renderer_, *surface), std::move(passability)));
-	} else {
-		new_tile.reset(new EmptyTile(coords));
-	}
-
-	return tiles_.insert(std::make_pair(coords, std::move(new_tile))).first;
-}
 
 TileCache::TileCache(SDL2pp::Renderer& renderer) : renderer_(renderer), cache_size_(64), finish_thread_(false) {
 	loader_thread_ = std::thread([this](){
@@ -110,13 +48,13 @@ TileCache::TileCache(SDL2pp::Renderer& renderer) : renderer_(renderer), cache_si
 
 				lock.unlock();
 
-				SurfacePtr ptr = LoadTileData(current_tile);
+				TilePtr tile(new Tile(current_tile));
 
 				lock.lock();
 
 				// save loaded tile into list so it's converted to
 				// texture from main thread later
-				loaded_list_.push_back(std::make_pair(current_tile, std::move(ptr)));
+				loaded_tiles_.push_back(std::make_pair(current_tile, std::move(tile)));
 				currently_loading_ = SDL2pp::NullOpt;
 			}
 		});
@@ -138,8 +76,10 @@ void TileCache::SetCacheSize(size_t cache_size) {
 
 void TileCache::PreloadTilesSync(const SDL2pp::Rect& rect) {
 	ProcessTilesInRect(rect, [this](const SDL2pp::Point tilecoord) {
-			if (tiles_.find(tilecoord) == tiles_.end())
-				CreateTile(tilecoord, LoadTileData(tilecoord));
+			if (tiles_.find(tilecoord) == tiles_.end()) {
+				TilePtr newtile(new Tile(tilecoord));
+				tiles_.insert(std::make_pair(tilecoord, std::move(newtile)));
+			}
 		});
 }
 
@@ -150,10 +90,10 @@ void TileCache::UpdateCache(const SDL2pp::Rect& rect) {
 		std::lock_guard<std::mutex> lock(loader_queue_mutex_);
 
 		// First, materialize all freshly loaded tiles
-		for (auto& loaded : loaded_list_)
-			CreateTile(loaded.first, std::move(loaded.second));
+		for (auto& loaded : loaded_tiles_)
+			tiles_.insert(std::make_pair(loaded.first, std::move(loaded.second)));
 
-		loaded_list_.clear();
+		loaded_tiles_.clear();
 
 		// Next add all missing tiles to the queue
 		std::list<SDL2pp::Point> missing_tiles;
@@ -209,8 +149,10 @@ void TileCache::Render(const SDL2pp::Rect& rect) {
 void TileCache::UpdateCollisions(CollisionInfo& collisions, const SDL2pp::Rect& rect, int distance) {
 	ProcessTilesInRect(rect.GetExtension(distance), [&](const SDL2pp::Point& tilecoord) {
 			auto tile = tiles_.find(tilecoord);
-			if (tile == tiles_.end()) // while we can skip not loaded tiles for rendering, we can't for physics
-				tile = CreateTile(tilecoord, LoadTileData(tilecoord)); // so load needed tile synchronously
+			if (tile == tiles_.end()) {// while we can skip not loaded tiles for rendering, we can't for physics
+				TilePtr newtile(new Tile(tilecoord));
+				tile = tiles_.insert(std::make_pair(tilecoord, std::move(newtile))).first; // so load needed tile synchronously
+			}
 			tile->second->CheckLeftCollision(collisions, SDL2pp::Rect(rect.x - distance, rect.y, distance, rect.h));
 			tile->second->CheckRightCollision(collisions, SDL2pp::Rect(rect.x + rect.w, rect.y, distance, rect.h));
 			tile->second->CheckTopCollision(collisions, SDL2pp::Rect(rect.x, rect.y - distance, rect.w, distance));
