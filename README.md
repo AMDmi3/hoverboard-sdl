@@ -39,21 +39,39 @@ Dependencies:
 * [SDL2_image](https://www.libsdl.org/projects/SDL_image/)
 * [SDL2_ttf](https://www.libsdl.org/projects/SDL_ttf/)
 
+To install these on apt-using system sych as Debian or Ubuntu, run:
+
+```
+apt-get install cmake libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev
+```
+
 The project also uses libSDL2pp, C++11 bindings library for SDL2.
 It's included into git repository as a submodule, so if you've
 obtained source through git, don't forget to run ```git submodule
 init && git submodule update```.
 
-To build and run the game:
+To build and run the game without installation:
 
 ```
-cmake . && make && ./hoverboard
+cmake .
+make
+./hoverboard
 ```
 
 To install systemwide:
 
 ```
-cmake -DCMAKE_INSTALL_PREFIX=/usr/local . && make && make install
+cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DSYSTEMWIDE=ON
+make
+make install
+```
+
+To create self-contained directory for standalone package:
+
+```
+cmake -DCMAKE_INSTALL_PREFIX=./package -DSTANDALONE=ON
+make
+make install
 ```
 
 ## Author
