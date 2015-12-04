@@ -1,4 +1,11 @@
+# CMake files
 CMakeCache.txt
 CMakeFiles
 Makefile
 cmake_install.cmake
+
+# Generated files
+misc/hoverboard.desktop
+
+# Binaries
+hoverboard

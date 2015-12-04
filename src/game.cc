@@ -350,7 +350,7 @@ void Game::DepositCoins() {
 		else if (numcoins == 17)
 			message = "you found all the coins! great job!";
 		else if (numcoins == 42)
-			message = "you found all the coins! great job!";
+			message = "no answers here.";
 		else if (numcoins == coin_locations_.size())
 			message = "are you gandalf?";
 

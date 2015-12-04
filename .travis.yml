@@ -10,6 +10,6 @@ before_install:
   - sudo sed -i -e 's|friend class hash|friend struct hash|' /usr/include/c++/4.8/bits/stl_bvector.h
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
 script:
-  - cmake -DCMAKE_CXX_FLAGS=-Werror -DCMAKE_INSTALL_PREFIX=prefix .
+  - cmake -DCMAKE_CXX_FLAGS=-Werror -DCMAKE_INSTALL_PREFIX=prefix -DSYSTEMWIDE=ON .
   - make
   - make install
