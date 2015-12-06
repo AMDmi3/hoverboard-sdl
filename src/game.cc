@@ -43,6 +43,7 @@ Game::Game(SDL2pp::Renderer& renderer)
 	  player_texture_(renderer_, DATADIR "/all-four.png"),
 	  player_texture_b_(renderer_, DATADIR "/all-four-b.png"),
 	  player_texture_y_(renderer_, DATADIR "/all-four-y.png"),
+	  minimap_texture_(renderer_, DATADIR "/minimap.png"),
 	  font_18_(DATADIR "/xkcd-Regular.otf", 18),
 	  font_20_(DATADIR "/xkcd-Regular.otf", 20),
 	  font_34_(DATADIR "/xkcd-Regular.otf", 34),
@@ -365,6 +366,12 @@ void Game::Render() {
 			renderer_.Copy(playarea_message_, SDL2pp::NullOpt, pos);
 		}
 	}
+
+	// minimap
+	if (show_minimap_) {
+		minimap_texture_.SetAlphaMod(192);
+		renderer_.Copy(minimap_texture_, SDL2pp::NullOpt, SDL2pp::NullOpt);
+	}
 }
 
 void Game::DepositCoins() {
@@ -599,4 +606,8 @@ void Game::JumpToLocation(int n) {
 				}
 			);
 	}
+}
+
+void Game::ToggleMinimap() {
+	show_minimap_ = !show_minimap_;
 }

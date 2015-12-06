@@ -105,6 +105,7 @@ private:
 	SDL2pp::Texture player_texture_;
 	SDL2pp::Texture player_texture_b_;
 	SDL2pp::Texture player_texture_y_;
+	SDL2pp::Texture minimap_texture_;
 	SDL2pp::Font font_18_;
 	SDL2pp::Font font_20_;
 	SDL2pp::Font font_34_;
@@ -140,6 +141,9 @@ private:
 	};
 
 	std::list<PortalEffect> portal_effects_;
+
+	bool show_minimap_ = false;
+	std::set<SDL2pp::Point> seen_tiles_;
 
 	// Game state
 	struct GameState {
@@ -202,6 +206,8 @@ public:
 
 	void SaveLocation(int n);
 	void JumpToLocation(int n);
+
+	void ToggleMinimap();
 };
 
 #endif // GAME_HH

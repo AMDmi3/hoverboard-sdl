@@ -89,6 +89,9 @@ int main(int /*argc*/, char** /*argv*/) try {
 				case SDLK_DOWN: case SDLK_s: case SDLK_j:
 					game.SetActionFlag(Game::DOWN);
 					break;
+				case SDLK_TAB:
+					game.ToggleMinimap();
+					break;
 				}
 
 				auto teleport_slot = teleport_slots.find(event.key.keysym.sym);
