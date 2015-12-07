@@ -33,6 +33,56 @@ private:
 	static constexpr int tile_size_ = 512;
 
 private:
+	// obstacle aspects
+	class ObstacleData {
+	public:
+		virtual ~ObstacleData();
+
+		virtual void CheckLeftCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const = 0;
+		virtual void CheckRightCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const = 0;
+		virtual void CheckTopCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const = 0;
+		virtual void CheckBottomCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const = 0;
+	};
+
+	class NoObstacle : public ObstacleData {
+	public:
+		virtual ~NoObstacle();
+
+		virtual void CheckLeftCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const final;
+		virtual void CheckRightCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const final;
+		virtual void CheckTopCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const final;
+		virtual void CheckBottomCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const final;
+	};
+
+	class SolidObstacle : public ObstacleData {
+	public:
+		SolidObstacle();
+		virtual ~SolidObstacle();
+
+		virtual void CheckLeftCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const final;
+		virtual void CheckRightCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const final;
+		virtual void CheckTopCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const final;
+		virtual void CheckBottomCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const final;
+	};
+
+	class ObstacleMap : public ObstacleData {
+	public:
+		typedef std::vector<bool> Map;
+
+	private:
+		Map map_;
+
+	public:
+		ObstacleMap(Map&& map);
+		virtual ~ObstacleMap();
+
+		virtual void CheckLeftCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const final;
+		virtual void CheckRightCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const final;
+		virtual void CheckTopCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const final;
+		virtual void CheckBottomCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const final;
+	};
+
+private:
 	enum class ColorMode {
 		EMPTY,
 		PIXELS,
@@ -40,29 +90,20 @@ private:
 		SOLID,
 	};
 
-	enum class ObstacleMode {
-		UNIFORM,
-		MASK,
-	};
-
 	typedef std::vector<unsigned char> ColorMap;
-	typedef std::vector<bool> ObstacleMap;
 
 private:
 	SDL2pp::Point coords_;
 
 	ColorMode color_mode_;
-	ObstacleMode obstacle_mode_;
 
 	union {
 		ColorMap* color_data_;
 		SDL2pp::Texture* texture_;
 		SDL_Color solid_color_;
 	};
-	union {
-		ObstacleMap* obstacle_map_;
-		bool is_obstacle_;
-	};
+
+	std::unique_ptr<ObstacleData> obstacle_data_;
 
 private:
 	constexpr static int FloorDiv(int a, int b) {

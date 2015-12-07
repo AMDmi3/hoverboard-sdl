@@ -49,6 +49,7 @@ SET(SOURCES
 	src/main.cc
 	src/tilecache.cc
 	src/tile.cc
+	src/tile_obstacle.cc
 )
 
 SET(HEADERS

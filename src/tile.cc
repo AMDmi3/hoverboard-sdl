@@ -38,9 +38,7 @@ std::string Tile::MakeTilePath(const SDL2pp::Point& coords) {
 
 Tile::Tile(const SDL2pp::Point& coords)
 	: coords_(coords),
-	  color_mode_(ColorMode::EMPTY),
-	  obstacle_mode_(ObstacleMode::UNIFORM),
-	  is_obstacle_(false) {
+	  color_mode_(ColorMode::EMPTY) {
 	std::string path = MakeTilePath(coords).c_str();
 	struct stat st;
 	if (stat(path.c_str(), &st) == 0) {
@@ -57,7 +55,7 @@ Tile::Tile(const SDL2pp::Point& coords)
 
 		// read pixels
 		ColorMap pixels;
-		ObstacleMap obstacle_map;
+		ObstacleMap::Map obstacle_map;
 		pixels.reserve(tile_size_ * tile_size_ * 4);
 		obstacle_map.reserve(tile_size_ * tile_size_);
 
@@ -102,12 +100,14 @@ Tile::Tile(const SDL2pp::Point& coords)
 		}
 
 		if (same_obstacle) {
-			obstacle_mode_ = ObstacleMode::UNIFORM;
-			is_obstacle_ = default_obstacle;
+			if (default_obstacle) {
+				obstacle_data_.reset(new SolidObstacle());
+			} else {
+				obstacle_data_.reset(new NoObstacle());
+			}
 		} else {
-			obstacle_mode_ = ObstacleMode::MASK;
 			try {
-				obstacle_map_ = new ObstacleMap(std::move(obstacle_map));
+				obstacle_data_.reset(new ObstacleMap(std::move(obstacle_map)));
 			} catch (...) {
 				if (color_mode_ == ColorMode::PIXELS)
 					delete color_data_;
@@ -128,9 +128,6 @@ Tile::~Tile() {
 	default:
 		break;
 	}
-
-	if (obstacle_mode_ == ObstacleMode::MASK)
-		delete obstacle_map_;
 }
 
 SDL2pp::Point Tile::GetCoords() const {
@@ -175,114 +172,21 @@ void Tile::Render(SDL2pp::Renderer& renderer, const SDL2pp::Rect& viewport) {
 }
 
 void Tile::CheckLeftCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const {
-	auto real_rect = rect.GetIntersection(GetRect());
-	if (!real_rect)
-		return;
-
-	if (obstacle_mode_ == ObstacleMode::UNIFORM) {
-		if (is_obstacle_)
-			coll.AddLeftCollision(real_rect->GetBottomRight());
-		return;
-	}
-
-	SDL2pp::Point point;
-	// This bit is interesting from the performance perspective
-	// here we need to get rightmost (and if there are multiple rightmost,
-	// bottommost of them) point for which obstacle mask is true
-	//
-	// We can either:
-	// - scan whole rectangle from top to bottom and left to right and
-	//   return the best matching point
-	// - scan from the right, the from the bottom, and return the first
-	//   matching point
-	//
-	// The second way is, in theory, really unfriendly to cache prefetching
-	// (however modern CPUs may have optimization for backward scan as well),
-	// but it lets us stop the scan early in some cases (player close to a
-	// wall). The first way is cache-friendly, though it always scans the
-	// while rectangle.
-	//
-	// There are other considerations, such as that we usually only need to
-	// scan a thin (in horizontal direction) stripe, so prefetching doesn't
-	// help us in any case.
-	//
-	// Anyway, I haven't done any tests and just chose a second variant
-	// intuitively, but someone could do some research. Also, there could
-	// be more clever data structure than a plain mask used to speed up
-	// collision detection even more. It's not a bottleneck for this to
-	// make sense though...
-	for (point.x = real_rect->GetX2(); point.x >= real_rect->x; point.x--) {
-		for (point.y = real_rect->GetY2(); point.y >= real_rect->y; point.y--) {
-			if ((*obstacle_map_)[point.x - GetRect().x + tile_size_ * (point.y - GetRect().y)]) {
-				coll.AddLeftCollision(point);
-				return;
-			}
-		}
-	}
+	if (auto real_rect = rect.GetIntersection(GetRect()))
+		obstacle_data_->CheckLeftCollision(coll, *real_rect - GetRect().GetTopLeft(), GetRect().GetTopLeft());
 }
 
 void Tile::CheckRightCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const {
-	auto real_rect = rect.GetIntersection(GetRect());
-	if (!real_rect)
-		return;
-
-	if (obstacle_mode_ == ObstacleMode::UNIFORM) {
-		if (is_obstacle_)
-			coll.AddRightCollision(real_rect->GetBottomLeft());
-		return;
-	}
-
-	SDL2pp::Point point;
-	for (point.x = real_rect->x; point.x <= real_rect->GetX2(); point.x++) {
-		for (point.y = real_rect->GetY2(); point.y >= real_rect->y; point.y--) {
-			if ((*obstacle_map_)[point.x - GetRect().x + tile_size_ * (point.y - GetRect().y)]) {
-				coll.AddRightCollision(point);
-				return;
-			}
-		}
-	}
+	if (auto real_rect = rect.GetIntersection(GetRect()))
+		obstacle_data_->CheckRightCollision(coll, *real_rect - GetRect().GetTopLeft(), GetRect().GetTopLeft());
 }
 
 void Tile::CheckTopCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const {
-	auto real_rect = rect.GetIntersection(GetRect());
-	if (!real_rect)
-		return;
-
-	if (obstacle_mode_ == ObstacleMode::UNIFORM) {
-		if (is_obstacle_)
-			coll.AddTopCollision(real_rect->GetY2());
-		return;
-	}
-
-	SDL2pp::Point point;
-	for (point.y = real_rect->GetY2(); point.y >= real_rect->y; point.y--) {
-		for (point.x = real_rect->x; point.x <= real_rect->GetX2(); point.x++) {
-			if ((*obstacle_map_)[point.x - GetRect().x + tile_size_ * (point.y - GetRect().y)]) {
-				coll.AddTopCollision(point.y);
-				return;
-			}
-		}
-	}
+	if (auto real_rect = rect.GetIntersection(GetRect()))
+		obstacle_data_->CheckTopCollision(coll, *real_rect - GetRect().GetTopLeft(), GetRect().GetTopLeft());
 }
 
 void Tile::CheckBottomCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const {
-	auto real_rect = rect.GetIntersection(GetRect());
-	if (!real_rect)
-		return;
-
-	if (obstacle_mode_ == ObstacleMode::UNIFORM) {
-		if (is_obstacle_)
-			coll.AddBottomCollision(real_rect->y);
-		return;
-	}
-
-	SDL2pp::Point point;
-	for (point.y = real_rect->y; point.y <= real_rect->GetY2(); point.y++) {
-		for (point.x = real_rect->x; point.x <= real_rect->GetX2(); point.x++) {
-			if ((*obstacle_map_)[point.x - GetRect().x + tile_size_ * (point.y - GetRect().y)]) {
-				coll.AddBottomCollision(point.y);
-				return;
-			}
-		}
-	}
+	if (auto real_rect = rect.GetIntersection(GetRect()))
+		obstacle_data_->CheckBottomCollision(coll, *real_rect - GetRect().GetTopLeft(), GetRect().GetTopLeft());
 }
