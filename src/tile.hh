@@ -21,6 +21,7 @@
 #define TILES_HH
 
 #include <vector>
+#include <memory>
 
 #include <SDL2pp/Point.hh>
 #include <SDL2pp/Renderer.hh>

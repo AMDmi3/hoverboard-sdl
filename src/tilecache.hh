@@ -21,7 +21,6 @@
 #define TILECACHE_HH
 
 #include <map>
-#include <memory>
 #include <string>
 #include <condition_variable>
 #include <mutex>
