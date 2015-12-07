@@ -82,27 +82,65 @@ private:
 		virtual void CheckBottomCollision(CollisionInfo& coll, const SDL2pp::Rect& localrect, const SDL2pp::Point& offset) const final;
 	};
 
-private:
-	enum class ColorMode {
-		EMPTY,
-		PIXELS,
-		TEXTURE,
-		SOLID,
+	// visual aspects
+	class TextureVisual;
+
+	class VisualData {
+	public:
+		virtual ~VisualData();
+		virtual void Render(SDL2pp::Renderer& renderer, const SDL2pp::Point& offset) = 0;
+
+		virtual bool NeedsUpgrade() const;
+		virtual std::unique_ptr<TextureVisual> Upgrade(SDL2pp::Renderer& renderer) const;
 	};
 
-	typedef std::vector<unsigned char> ColorMap;
+	class NoVisual : public VisualData {
+	public:
+		virtual ~NoVisual();
+		virtual void Render(SDL2pp::Renderer& renderer, const SDL2pp::Point& offset) final;
+	};
+
+	class SolidVisual : public VisualData {
+	private:
+		SDL_Color color_;
+
+	public:
+		SolidVisual(const SDL_Color& color);
+		virtual ~SolidVisual();
+		virtual void Render(SDL2pp::Renderer& renderer, const SDL2pp::Point& offset) final;
+	};
+
+	class PixelVisual : public VisualData {
+	public:
+		typedef std::vector<unsigned char> PixelData;
+
+	private:
+		PixelData pixels_;
+
+	public:
+		PixelVisual(PixelData&& pixels);
+		virtual ~PixelVisual();
+
+		virtual void Render(SDL2pp::Renderer& renderer, const SDL2pp::Point& offset) final;
+		virtual bool NeedsUpgrade() const final;
+		virtual std::unique_ptr<TextureVisual> Upgrade(SDL2pp::Renderer& renderer) const final;
+	};
+
+	class TextureVisual : public VisualData {
+	private:
+		SDL2pp::Texture texture_;
+
+	public:
+		TextureVisual(SDL2pp::Renderer& renderer, const PixelVisual::PixelData& pixels);
+		virtual ~TextureVisual();
+
+		virtual void Render(SDL2pp::Renderer& renderer, const SDL2pp::Point& offset) final;
+	};
 
 private:
 	SDL2pp::Point coords_;
 
-	ColorMode color_mode_;
-
-	union {
-		ColorMap* color_data_;
-		SDL2pp::Texture* texture_;
-		SDL_Color solid_color_;
-	};
-
+	std::unique_ptr<VisualData> visual_data_;
 	std::unique_ptr<ObstacleData> obstacle_data_;
 
 private:
@@ -124,7 +162,7 @@ public:
 
 public:
 	Tile(const SDL2pp::Point& coords);
-	virtual ~Tile();
+	~Tile();
 
 	SDL2pp::Point GetCoords() const;
 	SDL2pp::Rect GetRect() const;

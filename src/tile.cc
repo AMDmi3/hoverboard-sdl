@@ -37,97 +37,78 @@ std::string Tile::MakeTilePath(const SDL2pp::Point& coords) {
 }
 
 Tile::Tile(const SDL2pp::Point& coords)
-	: coords_(coords),
-	  color_mode_(ColorMode::EMPTY) {
+	: coords_(coords) {
 	std::string path = MakeTilePath(coords).c_str();
 	struct stat st;
-	if (stat(path.c_str(), &st) == 0) {
-		// temporary surface for image loading
-		SDL2pp::Surface surface(path);
-		assert(surface.GetWidth() >= tile_size_ && surface.GetHeight() >= tile_size_);
-
-		SDL2pp::Surface::LockHandle lock = surface.Lock();
-
-		// we only support palettes which tiles by fact are
-		SDL_Color* palette = surface.Get()->format->palette ? surface.Get()->format->palette->colors : nullptr;
-		assert(palette);
-		assert(lock.GetFormat().BytesPerPixel == 1);
-
-		// read pixels
-		ColorMap pixels;
-		ObstacleMap::Map obstacle_map;
-		pixels.reserve(tile_size_ * tile_size_ * 4);
-		obstacle_map.reserve(tile_size_ * tile_size_);
-
-		unsigned char* line = static_cast<unsigned char*>(lock.GetPixels());
-		unsigned char* pixel = line;
-		SDL_Color default_color{ palette[*pixel].r, palette[*pixel].g, palette[*pixel].b, palette[*pixel].a };
-		bool default_obstacle = IsObstacle(palette[*pixel].r);
-		bool same_color = true;
-		bool same_obstacle = true;
-		for (int y = 0; y < tile_size_; y++) {
-			for (int x = 0; x < tile_size_; x++) {
-				pixels.push_back(palette[*pixel].r);
-				pixels.push_back(palette[*pixel].g);
-				pixels.push_back(palette[*pixel].b);
-				pixels.push_back(palette[*pixel].a);
-
-				obstacle_map.push_back(IsObstacle(palette[*pixel].r));
-
-				if (true && (
-						palette[*pixel].r != default_color.r ||
-						palette[*pixel].g != default_color.g ||
-						palette[*pixel].b != default_color.b ||
-						palette[*pixel].a != default_color.a
-				   ))
-					same_color = false;
-
-				if (true && IsObstacle(palette[*pixel].r) != default_obstacle)
-					same_obstacle = false;
-
-				pixel++;
-			}
-			pixel = (line += lock.GetPitch());
-		}
-
-		// determine mode and save data
-		if (same_color) {
-			color_mode_ = ColorMode::SOLID;
-			solid_color_ = default_color;
-		} else {
-			color_mode_ = ColorMode::PIXELS;
-			color_data_ = new ColorMap(std::move(pixels));
-		}
-
-		if (same_obstacle) {
-			if (default_obstacle) {
-				obstacle_data_.reset(new SolidObstacle());
-			} else {
-				obstacle_data_.reset(new NoObstacle());
-			}
-		} else {
-			try {
-				obstacle_data_.reset(new ObstacleMap(std::move(obstacle_map)));
-			} catch (...) {
-				if (color_mode_ == ColorMode::PIXELS)
-					delete color_data_;
-				throw;
-			}
-		}
+	if (stat(path.c_str(), &st) != 0) {
+		visual_data_.reset(new NoVisual);
+		obstacle_data_.reset(new NoObstacle);
+		return;
 	}
+
+	// temporary surface for image loading
+	SDL2pp::Surface surface(path);
+	assert(surface.GetWidth() >= tile_size_ && surface.GetHeight() >= tile_size_);
+
+	SDL2pp::Surface::LockHandle lock = surface.Lock();
+
+	// we only support palettes which tiles by fact are
+	SDL_Color* palette = surface.Get()->format->palette ? surface.Get()->format->palette->colors : nullptr;
+	assert(palette);
+	assert(lock.GetFormat().BytesPerPixel == 1);
+
+	// read pixels
+	PixelVisual::PixelData pixels;
+	ObstacleMap::Map obstacle_map;
+	pixels.reserve(tile_size_ * tile_size_ * 4);
+	obstacle_map.reserve(tile_size_ * tile_size_);
+
+	unsigned char* line = static_cast<unsigned char*>(lock.GetPixels());
+	unsigned char* pixel = line;
+	SDL_Color default_color{ palette[*pixel].r, palette[*pixel].g, palette[*pixel].b, palette[*pixel].a };
+	bool default_obstacle = IsObstacle(palette[*pixel].r);
+	bool same_color = true;
+	bool same_obstacle = true;
+	for (int y = 0; y < tile_size_; y++) {
+		for (int x = 0; x < tile_size_; x++) {
+			pixels.push_back(palette[*pixel].r);
+			pixels.push_back(palette[*pixel].g);
+			pixels.push_back(palette[*pixel].b);
+			pixels.push_back(palette[*pixel].a);
+
+			obstacle_map.push_back(IsObstacle(palette[*pixel].r));
+
+			if (true && (
+					palette[*pixel].r != default_color.r ||
+					palette[*pixel].g != default_color.g ||
+					palette[*pixel].b != default_color.b ||
+					palette[*pixel].a != default_color.a
+			   ))
+				same_color = false;
+
+			if (true && IsObstacle(palette[*pixel].r) != default_obstacle)
+				same_obstacle = false;
+
+			pixel++;
+		}
+		pixel = (line += lock.GetPitch());
+	}
+
+	// determine mode and save data
+	if (same_color)
+		visual_data_.reset(new SolidVisual(default_color));
+	else
+		visual_data_.reset(new PixelVisual(std::move(pixels)));
+
+	if (same_obstacle && default_obstacle)
+		obstacle_data_.reset(new SolidObstacle());
+	else if (same_obstacle && !default_obstacle)
+		obstacle_data_.reset(new NoObstacle());
+	else
+		obstacle_data_.reset(new ObstacleMap(std::move(obstacle_map)));
 }
 
 Tile::~Tile() {
-	switch (color_mode_) {
-	case ColorMode::PIXELS:
-		delete color_data_;
-		break;
-	case ColorMode::TEXTURE:
-		delete texture_;
-		break;
-	default:
-		break;
-	}
 }
 
 SDL2pp::Point Tile::GetCoords() const {
@@ -139,36 +120,17 @@ SDL2pp::Rect Tile::GetRect() const {
 }
 
 void Tile::Materialize(SDL2pp::Renderer& renderer) {
-	SDL2pp::Texture* texture = new SDL2pp::Texture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, tile_size_, tile_size_);
-	texture->Update(SDL2pp::NullOpt, color_data_->data(), tile_size_ * 4);
-	delete color_data_;
-	texture_ = texture;
-	color_mode_ = ColorMode::TEXTURE;
+	if (visual_data_->NeedsUpgrade()) {
+		auto upgrade = visual_data_->Upgrade(renderer);
+		visual_data_ = std::move(upgrade);
+	}
 }
 
 void Tile::Render(SDL2pp::Renderer& renderer, const SDL2pp::Rect& viewport) {
-	SDL2pp::Rect tilerect = GetRect();
-	if (!tilerect.Intersects(viewport))
+	if (!GetRect().Intersects(viewport))
 		return;
 
-	SDL2pp::Rect render_rect = SDL2pp::Rect(tilerect.x - viewport.x, tilerect.y - viewport.y, tile_size_, tile_size_);
-
-	switch (color_mode_) {
-	case ColorMode::PIXELS:
-		Materialize(renderer);
-		// fallthrough
-	case ColorMode::TEXTURE:
-		renderer.Copy(*texture_,
-				SDL2pp::Rect(0, 0, tile_size_, tile_size_),
-				render_rect);
-		break;
-	case ColorMode::SOLID:
-		renderer.SetDrawColor(solid_color_.r, solid_color_.g, solid_color_.b, solid_color_.a);
-		renderer.FillRect(render_rect);
-		break;
-	default:
-		break;
-	}
+	visual_data_->Render(renderer, GetRect().GetTopLeft() - viewport.GetTopLeft());
 }
 
 void Tile::CheckLeftCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const {

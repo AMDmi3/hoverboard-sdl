@@ -140,8 +140,10 @@ void TileCache::Render(const SDL2pp::Rect& rect) {
 	for (tilecoord.x = start_tile.x; tilecoord.x <= end_tile.x; tilecoord.x++) {
 		for (tilecoord.y = start_tile.y; tilecoord.y <= end_tile.y; tilecoord.y++) {
 			auto tileiter = tiles_.find(tilecoord);
-			if (tileiter != tiles_.end())
+			if (tileiter != tiles_.end()) {
+				tileiter->second->Materialize(renderer_); // XXX
 				tileiter->second->Render(renderer_, rect);
+			}
 		}
 	}
 }
