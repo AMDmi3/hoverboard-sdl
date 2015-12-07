@@ -164,6 +164,11 @@ public:
 	Tile(const SDL2pp::Point& coords);
 	~Tile();
 
+	Tile(Tile&&) noexcept = default;
+	Tile(const Tile&) = delete;
+	Tile& operator=(Tile&&) noexcept = default;
+	Tile& operator=(const Tile&) = delete;
+
 	SDL2pp::Point GetCoords() const;
 	SDL2pp::Rect GetRect() const;
 

@@ -37,8 +37,7 @@ class CollisionInfo;
 
 class TileCache {
 private:
-	typedef std::unique_ptr<Tile> TilePtr;
-	typedef std::map<SDL2pp::Point, TilePtr> TileMap;
+	typedef std::map<SDL2pp::Point, Tile> TileMap;
 
 private:
 	SDL2pp::Renderer& renderer_;
@@ -49,7 +48,7 @@ private:
 	// background loader
 	std::thread loader_thread_;
 	std::list<SDL2pp::Point> loader_queue_;
-	std::list<std::pair<SDL2pp::Point, TilePtr>> loaded_tiles_;
+	std::list<std::pair<SDL2pp::Point, Tile>> loaded_tiles_;
 	SDL2pp::Optional<SDL2pp::Point> currently_loading_;
 
 	std::mutex loader_queue_mutex_;

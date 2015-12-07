@@ -48,13 +48,13 @@ TileCache::TileCache(SDL2pp::Renderer& renderer) : renderer_(renderer), cache_si
 
 				lock.unlock();
 
-				TilePtr tile(new Tile(current_tile));
+				Tile tile(current_tile);
 
 				lock.lock();
 
 				// save loaded tile into list so it's converted to
 				// texture from main thread later
-				loaded_tiles_.push_back(std::make_pair(current_tile, std::move(tile)));
+				loaded_tiles_.emplace_back(std::make_pair(current_tile, std::move(tile)));
 				currently_loading_ = SDL2pp::NullOpt;
 			}
 		});
@@ -76,10 +76,8 @@ void TileCache::SetCacheSize(size_t cache_size) {
 
 void TileCache::PreloadTilesSync(const SDL2pp::Rect& rect) {
 	ProcessTilesInRect(rect, [this](const SDL2pp::Point tilecoord) {
-			if (tiles_.find(tilecoord) == tiles_.end()) {
-				TilePtr newtile(new Tile(tilecoord));
-				tiles_.insert(std::make_pair(tilecoord, std::move(newtile)));
-			}
+			if (tiles_.find(tilecoord) == tiles_.end())
+				tiles_.emplace(tilecoord, Tile(tilecoord));
 		});
 }
 
@@ -91,7 +89,7 @@ void TileCache::UpdateCache(const SDL2pp::Rect& rect) {
 
 		// First, materialize all freshly loaded tiles
 		for (auto& loaded : loaded_tiles_)
-			tiles_.insert(std::make_pair(loaded.first, std::move(loaded.second)));
+			tiles_.emplace(std::make_pair(loaded.first, std::move(loaded.second)));
 
 		loaded_tiles_.clear();
 
@@ -102,7 +100,7 @@ void TileCache::UpdateCache(const SDL2pp::Rect& rect) {
 				if (tiles_.find(tilecoord) == tiles_.end() && (!currently_loading_ || *currently_loading_ != tilecoord))
 					missing_tiles.push_back(tilecoord);
 				else
-					seen_tiles.insert(tilecoord);
+					seen_tiles.emplace(tilecoord);
 			});
 
 		// Update loader queue
@@ -122,7 +120,7 @@ void TileCache::UpdateCache(const SDL2pp::Rect& rect) {
 
 			SDL2pp::Point delta = Tile::TileForPoint(SDL2pp::Point(rect.x + rect.w/2, rect.y + rect.h/2)) - tile.first;
 			int distance = std::abs(delta.x) + std::abs(delta.y);
-			tiles_for_removal.insert(std::make_pair(distance, tile.first));
+			tiles_for_removal.emplace(std::make_pair(distance, tile.first));
 		}
 
 		// Remove furthest
@@ -141,8 +139,8 @@ void TileCache::Render(const SDL2pp::Rect& rect) {
 		for (tilecoord.y = start_tile.y; tilecoord.y <= end_tile.y; tilecoord.y++) {
 			auto tileiter = tiles_.find(tilecoord);
 			if (tileiter != tiles_.end()) {
-				tileiter->second->Materialize(renderer_); // XXX
-				tileiter->second->Render(renderer_, rect);
+				tileiter->second.Materialize(renderer_); // XXX
+				tileiter->second.Render(renderer_, rect);
 			}
 		}
 	}
@@ -151,13 +149,12 @@ void TileCache::Render(const SDL2pp::Rect& rect) {
 void TileCache::UpdateCollisions(CollisionInfo& collisions, const SDL2pp::Rect& rect, int distance) {
 	ProcessTilesInRect(rect.GetExtension(distance), [&](const SDL2pp::Point& tilecoord) {
 			auto tile = tiles_.find(tilecoord);
-			if (tile == tiles_.end()) {// while we can skip not loaded tiles for rendering, we can't for physics
-				TilePtr newtile(new Tile(tilecoord));
-				tile = tiles_.insert(std::make_pair(tilecoord, std::move(newtile))).first; // so load needed tile synchronously
-			}
-			tile->second->CheckLeftCollision(collisions, SDL2pp::Rect(rect.x - distance, rect.y, distance, rect.h));
-			tile->second->CheckRightCollision(collisions, SDL2pp::Rect(rect.x + rect.w, rect.y, distance, rect.h));
-			tile->second->CheckTopCollision(collisions, SDL2pp::Rect(rect.x, rect.y - distance, rect.w, distance));
-			tile->second->CheckBottomCollision(collisions, SDL2pp::Rect(rect.x, rect.y + rect.h, rect.w, distance));
+			if (tile == tiles_.end()) // while we can skip not loaded tiles for rendering, we can't for physics
+				tile = tiles_.emplace(tilecoord, Tile(tilecoord)).first; // so load needed tile synchronously
+
+			tile->second.CheckLeftCollision(collisions, SDL2pp::Rect(rect.x - distance, rect.y, distance, rect.h));
+			tile->second.CheckRightCollision(collisions, SDL2pp::Rect(rect.x + rect.w, rect.y, distance, rect.h));
+			tile->second.CheckTopCollision(collisions, SDL2pp::Rect(rect.x, rect.y - distance, rect.w, distance));
+			tile->second.CheckBottomCollision(collisions, SDL2pp::Rect(rect.x, rect.y + rect.h, rect.w, distance));
 		});
 }
