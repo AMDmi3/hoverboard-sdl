@@ -17,8 +17,8 @@
  * along with hoverboard-sdl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TILES_HH
-#define TILES_HH
+#ifndef TILE_HH
+#define TILE_HH
 
 #include <vector>
 #include <memory>
@@ -182,4 +182,4 @@ public:
 	void CheckBottomCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const;
 };
 
-#endif // TILES_HH
+#endif // TILE_HH
