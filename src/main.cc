@@ -40,6 +40,8 @@ int main(int /*argc*/, char** /*argv*/) try {
 
 	Game game(renderer);
 
+	game.LoadState();
+
 	unsigned int prev_ticks = SDL_GetTicks();
 
 	// Main loop
@@ -52,10 +54,12 @@ int main(int /*argc*/, char** /*argv*/) try {
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
 			if (event.type == SDL_QUIT) {
+				game.SaveState();
 				return 0;
 			} else if (event.type == SDL_KEYDOWN) {
 				switch (event.key.keysym.sym) {
 				case SDLK_ESCAPE: case SDLK_q:
+					game.SaveState();
 					return 0;
 				case SDLK_LEFT: case SDLK_a: case SDLK_h:
 					game.SetActionFlag(Game::LEFT);

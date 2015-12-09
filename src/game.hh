@@ -137,6 +137,9 @@ private:
 
 	std::vector<bool> picked_coins_;
 
+private:
+	static std::string GetStatePath();
+
 public:
 	Game(SDL2pp::Renderer& renderer);
 	~Game();
@@ -154,6 +157,9 @@ public:
 	void Render();//const SDL2pp::Rect& viewport);
 
 	void DepositCoins();
+
+	void LoadState();
+	void SaveState() const;
 };
 
 #endif // GAME_HH

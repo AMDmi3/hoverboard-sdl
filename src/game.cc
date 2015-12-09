@@ -19,13 +19,14 @@
 
 #include "game.hh"
 
-#include <sys/types.h>
 #include <sys/stat.h>
 
 #include <memory>
 #include <sstream>
 #include <cmath>
 #include <algorithm>
+#include <fstream>
+#include <iomanip>
 
 #include <SDL2pp/Surface.hh>
 
@@ -367,7 +368,115 @@ void Game::DepositCoins() {
 			deposit_small_message_.reset(nullptr);
 	}
 
-	coins_ = coin_locations_;
+	std::fill(picked_coins_.begin(), picked_coins_.end(), false);
 	session_start_ = std::chrono::steady_clock::now();
 	deposit_message_expiration_ = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+}
+
+std::string Game::GetStatePath() {
+#ifdef STANDALONE
+	return "hoverboard.state";
+#else
+	const char* home = getenv("HOME");
+	const char* xdg_data_home = getenv("XDG_DATA_HOME");
+
+	if (xdg_data_home != nullptr) {
+		return std::string(xdg_data_home) + "/hoverboard/hoverboard.state";
+	} else if (home != nullptr) {
+		return std::string(home) + "/.local/share/hoverboard/hoverboard.state";
+	} else {
+		return "hoverboard.state";
+	}
+#endif
+}
+
+void Game::SaveState() const {
+	std::string path = GetStatePath();
+
+	// make directories
+	size_t slashpos = 0;
+
+	while ((slashpos = path.find('/', slashpos)) != std::string::npos) {
+		if (slashpos != 0)
+			mkdir(path.substr(0, slashpos).c_str(), 0777);
+		slashpos++;
+	}
+
+	// save state
+	std::ofstream statefile(path, std::ios::out | std::ios::trunc | std::ios::out);
+	if (!statefile.good()) {
+		std::cerr << "Warning: could not write game state to " << path << std::endl;
+		return;
+	}
+
+	// savefile format version
+	statefile << (int)0 << std::endl;
+
+	// playtime
+	statefile << std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - session_start_).count() << std::endl;
+
+	// player direction
+	statefile << (player_target_direction_ == PlayerDirection::FACING_RIGHT) << std::endl;
+
+	// player coords
+	statefile << std::setprecision(2);
+	statefile << std::fixed;
+
+	statefile << player_x_ << std::endl;
+	statefile << player_y_ << std::endl;
+
+	// coins
+	for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++)
+		statefile << picked_coins_[ncoin] << std::endl;
+}
+
+void Game::LoadState() {
+	std::string path = GetStatePath();
+
+	std::ifstream statefile(path, std::ios::in);
+	if (!statefile.good())
+		return;
+
+	// savefile format version
+	int version;
+	statefile >> version;
+
+	if (version == 0) {
+		// playtime
+		long playtime;
+		statefile >> playtime;
+
+		session_start_ = std::chrono::steady_clock::now() - std::chrono::seconds(playtime);
+
+		// player direction
+		bool right;
+		statefile >> right;
+
+		if (right) {
+			player_target_direction_ = PlayerDirection::FACING_RIGHT;
+			player_direction_ = 1.0;
+		} else {
+			player_target_direction_ = PlayerDirection::FACING_LEFT;
+			player_direction_ = -1.0;
+		}
+
+		// player coords
+		statefile >> player_x_;
+		statefile >> player_y_;
+
+		// coins
+		for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++) {
+			bool tmp;
+			statefile >> tmp;
+			picked_coins_[ncoin] = tmp;
+		}
+
+		// other new game overrides
+		is_in_deposit_area_ = true; // prevent re-deposit
+		is_in_play_area_ = false;   // prevent "leave to playe area" message
+		player_moved_ = true;       // prevent arrow keys message
+	} else {
+		std::cerr << "Warning: could not read game state from " << path << ", incompatible version " << version << std::endl;
+		return;
+	}
 }
