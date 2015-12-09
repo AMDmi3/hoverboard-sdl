@@ -19,7 +19,7 @@
 
 #include "game.hh"
 
-const Game::CoinList Game::coin_locations_ = {
+const std::vector<SDL2pp::Point> Game::coin_locations_ = {
 	{537027, -560249},
 	{525689, -560616},
 	{526077, -560616},

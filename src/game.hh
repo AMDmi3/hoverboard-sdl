@@ -56,10 +56,7 @@ public:
 	};
 
 private:
-	typedef std::list<SDL2pp::Point> CoinList;
-
-private:
-	const static CoinList coin_locations_;
+	const static std::vector<SDL2pp::Point> coin_locations_;
 
 	constexpr static int start_player_x_ = 512106;
 	constexpr static int start_player_y_ = -549612;
@@ -138,7 +135,7 @@ private:
 	PlayerDirection player_target_direction_ = PlayerDirection::FACING_RIGHT;
 	PlayerState player_state_ = PlayerState::STILL;
 
-	CoinList coins_;
+	std::vector<bool> picked_coins_;
 
 public:
 	Game(SDL2pp::Renderer& renderer);

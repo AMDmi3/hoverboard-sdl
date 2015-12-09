@@ -47,7 +47,7 @@ Game::Game(SDL2pp::Renderer& renderer)
 	  playarea_message_(renderer_, font_40_.RenderText_Blended("RETURN TO THE PLAY AREA", SDL_Color{ 255, 0, 0, 255 } )),
 	  tile_cache_(renderer),
 	  session_start_(std::chrono::steady_clock::now()),
-	  coins_(coin_locations_) {
+	  picked_coins_(coin_locations_.size(), false) {
 }
 
 Game::~Game() {
@@ -225,9 +225,6 @@ void Game::Update(float delta_t) {
 	// Player rectangle
 	SDL2pp::Rect player_rect = GetPlayerRect();
 
-	// Collect coins
-	coins_.remove_if([&](const SDL2pp::Point& coin){ return player_rect.Intersects(GetCoinRect(coin)); } );
-
 	// Deposit coins
 	if (player_rect.Intersects(deposit_area_rect_)) {
 		if (!is_in_deposit_area_)
@@ -235,6 +232,11 @@ void Game::Update(float delta_t) {
 		is_in_deposit_area_ = true;
 	} else {
 		is_in_deposit_area_ = false;
+
+		// Collect coins (only if not in deposit area)
+		for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++)
+			if (!picked_coins_[ncoin] && player_rect.Intersects(GetCoinRect(coin_locations_[ncoin])))
+				picked_coins_[ncoin] = true;
 	}
 
 	// Handle player leaving play area
@@ -258,8 +260,9 @@ void Game::Render() {
 	tile_cache_.Render(camerarect);
 
 	// draw coins
-	for (auto& coin : coins_)
-		renderer_.Copy(coin_texture_, SDL2pp::NullOpt, GetCoinRect(coin) - SDL2pp::Point(camerarect.x, camerarect.y));
+	for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++)
+		if (!picked_coins_[ncoin])
+			renderer_.Copy(coin_texture_, SDL2pp::NullOpt, GetCoinRect(coin_locations_[ncoin]) - SDL2pp::Point(camerarect.x, camerarect.y));
 
 	// draw player
 	{
@@ -318,7 +321,7 @@ void Game::Render() {
 }
 
 void Game::DepositCoins() {
-	size_t numcoins = coin_locations_.size() - coins_.size();
+	size_t numcoins = std::count(picked_coins_.begin(), picked_coins_.end(), true);
 	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - session_start_).count();
 
 	{
