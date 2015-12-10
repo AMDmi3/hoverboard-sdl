@@ -179,6 +179,14 @@ private:
 private:
 	static std::string GetStatePath();
 
+	SDL2pp::Rect GetCameraRect() const;
+	SDL2pp::Rect GetPlayerRect(float x, float y) const;
+	SDL2pp::Rect GetPlayerRect() const;
+	SDL2pp::Rect GetPlayerCollisionRect() const;
+	SDL2pp::Rect GetCoinRect(const SDL2pp::Point& coin) const;
+
+	void DepositCoins();
+
 public:
 	Game(SDL2pp::Renderer& renderer);
 	~Game();
@@ -186,17 +194,9 @@ public:
 	void SetActionFlag(int flag);
 	void ClearActionFlag(int flag);
 
-	SDL2pp::Rect GetCameraRect() const;
-	SDL2pp::Rect GetPlayerRect(float x, float y) const;
-	SDL2pp::Rect GetPlayerRect() const;
-	SDL2pp::Rect GetPlayerCollisionRect() const;
-	SDL2pp::Rect GetCoinRect(const SDL2pp::Point& coin) const;
-
 	void LoadVisibleTiles();
 	void Update(float delta_t);
-	void Render();//const SDL2pp::Rect& viewport);
-
-	void DepositCoins();
+	void Render();
 
 	void LoadState();
 	void SaveState() const;
