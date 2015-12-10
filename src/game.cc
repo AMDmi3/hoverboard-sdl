@@ -439,42 +439,51 @@ void Game::LoadState() {
 	int version;
 	statefile >> version;
 
+	GameState new_state;
+
 	if (version == 0) {
 		// playtime
 		long playtime;
 		statefile >> playtime;
 
-		game_state_.session_start = std::chrono::steady_clock::now() - std::chrono::seconds(playtime);
+		new_state.session_start = std::chrono::steady_clock::now() - std::chrono::seconds(playtime);
 
 		// player direction
 		bool right;
 		statefile >> right;
 
 		if (right) {
-			game_state_.player_target_direction = PlayerDirection::FACING_RIGHT;
-			game_state_.player_direction = 1.0;
+			new_state.player_target_direction = PlayerDirection::FACING_RIGHT;
+			new_state.player_direction = 1.0;
 		} else {
-			game_state_.player_target_direction = PlayerDirection::FACING_LEFT;
-			game_state_.player_direction = -1.0;
+			new_state.player_target_direction = PlayerDirection::FACING_LEFT;
+			new_state.player_direction = -1.0;
 		}
 
 		// player coords
-		statefile >> game_state_.player_x;
-		statefile >> game_state_.player_y;
+		statefile >> new_state.player_x;
+		statefile >> new_state.player_y;
 
 		// coins
 		for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++) {
 			bool tmp;
 			statefile >> tmp;
-			game_state_.picked_coins[ncoin] = tmp;
+			new_state.picked_coins[ncoin] = tmp;
 		}
-
-		// other new game overrides
-		game_state_.is_in_deposit_area = true; // prevent re-deposit
-		game_state_.is_in_play_area = false;   // prevent "leave to playe area" message
-		game_state_.player_moved = true;       // prevent arrow keys message
 	} else {
 		std::cerr << "Warning: could not read game state from " << path << ", incompatible version " << version << std::endl;
 		return;
 	}
+
+	// new state overrides
+	new_state.is_in_deposit_area = true; // prevent re-deposit
+	new_state.is_in_play_area = false;   // prevent "return to play area" message
+	new_state.player_moved = true;       // prevent arrow keys message
+
+	if (!statefile.good()) {
+		std::cerr << "Warning: could not read game state from " << path << std::endl;
+		return;
+	}
+
+	game_state_ = new_state;
 }
