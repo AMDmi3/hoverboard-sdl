@@ -122,7 +122,7 @@ private:
 		std::chrono::steady_clock::time_point deposit_message_expiration;
 		std::chrono::steady_clock::time_point playarea_leave_moment;
 
-		std::chrono::steady_clock::time_point session_start;
+		std::chrono::steady_clock::time_point session_start = std::chrono::steady_clock::now();
 
 		// Some statistics used mainly for messaging
 		bool player_moved = false;
