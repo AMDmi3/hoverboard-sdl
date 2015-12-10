@@ -140,10 +140,7 @@ private:
 		PlayerState player_state = PlayerState::STILL;
 
 		// Coins
-		std::vector<bool> picked_coins;
-
-		GameState() : picked_coins(coin_locations_.size(), false) {
-		}
+		std::vector<bool> picked_coins = std::vector<bool>(coin_locations_.size(), false);
 	};
 
 	GameState game_state_;
