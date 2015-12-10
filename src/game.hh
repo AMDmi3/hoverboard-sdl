@@ -110,32 +110,43 @@ private:
 
 	TileCache tile_cache_;
 
-	// Message-related statistics
-	bool player_moved_ = false;
-
-	std::chrono::steady_clock::time_point deposit_message_expiration_;
-	std::chrono::steady_clock::time_point playarea_leave_moment_;
-
-	std::chrono::steady_clock::time_point session_start_;
-
-	bool is_in_deposit_area_ = false;
-	bool is_in_play_area_ = true;
-
-	// Game state
+	// Controls
 	int action_flags_ = 0;
 	int prev_action_flags_ = 0;
 
-	float player_x_ = start_player_x_;
-	float player_y_ = start_player_y_;
+	struct GameState {
+		// Timing
+		std::chrono::steady_clock::time_point deposit_message_expiration;
+		std::chrono::steady_clock::time_point playarea_leave_moment;
 
-	float player_xvel_ = 0.0f;
-	float player_yvel_ = 0.0f;
+		std::chrono::steady_clock::time_point session_start;
 
-	float player_direction_ = 1.0f; // [-1.0..1.0]
-	PlayerDirection player_target_direction_ = PlayerDirection::FACING_RIGHT;
-	PlayerState player_state_ = PlayerState::STILL;
+		// Some statistics used mainly for messaging
+		bool player_moved = false;
 
-	std::vector<bool> picked_coins_;
+		bool is_in_deposit_area = false;
+		bool is_in_play_area = true;
+
+		// Physics
+		float player_x = start_player_x_;
+		float player_y = start_player_y_;
+
+		float player_xvel = 0.0f;
+		float player_yvel = 0.0f;
+
+		// Player sprite state
+		float player_direction = 1.0f; // [-1.0..1.0]
+		PlayerDirection player_target_direction = PlayerDirection::FACING_RIGHT;
+		PlayerState player_state = PlayerState::STILL;
+
+		// Coins
+		std::vector<bool> picked_coins;
+
+		GameState() : picked_coins(coin_locations_.size(), false) {
+		}
+	};
+
+	GameState game_state_;
 
 private:
 	static std::string GetStatePath();

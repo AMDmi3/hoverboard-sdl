@@ -46,9 +46,7 @@ Game::Game(SDL2pp::Renderer& renderer)
 	  font_40_(DATADIR "/xkcd-Regular.otf", 40),
 	  arrowkeys_message_(renderer_, font_18_.RenderText_Blended("use the arrow keys to move, esc/q to quit", SDL_Color{ 255, 255, 255, 192 })),
 	  playarea_message_(renderer_, font_40_.RenderText_Blended("RETURN TO THE PLAY AREA", SDL_Color{ 255, 0, 0, 255 } )),
-	  tile_cache_(renderer),
-	  session_start_(std::chrono::steady_clock::now()),
-	  picked_coins_(coin_locations_.size(), false) {
+	  tile_cache_(renderer) {
 }
 
 Game::~Game() {
@@ -64,8 +62,8 @@ void Game::ClearActionFlag(int flag) {
 
 SDL2pp::Rect Game::GetCameraRect() const {
 	SDL2pp::Rect rect(
-			(int)player_x_ - renderer_.GetOutputWidth() / 2,
-			(int)player_y_ - renderer_.GetOutputHeight() / 2,
+			(int)game_state_.player_x - renderer_.GetOutputWidth() / 2,
+			(int)game_state_.player_y - renderer_.GetOutputHeight() / 2,
 			renderer_.GetOutputWidth(),
 			renderer_.GetOutputHeight()
 		);
@@ -80,8 +78,8 @@ SDL2pp::Rect Game::GetCameraRect() const {
 
 SDL2pp::Rect Game::GetPlayerRect() const {
 	return SDL2pp::Rect(
-			(int)player_x_ - player_width_ + player_width_ / 2,
-			(int)player_y_ - player_height_ + player_height_ / 2,
+			(int)game_state_.player_x - player_width_ + player_width_ / 2,
+			(int)game_state_.player_y - player_height_ + player_height_ / 2,
 			player_width_,
 			player_height_
 		);
@@ -94,8 +92,8 @@ SDL2pp::Rect Game::GetPlayerCollisionRect() const {
 	rect.w -= player_x1_margin_ + player_x2_margin_;
 	rect.h -= player_y1_margin_ + player_y2_margin_;
 	return SDL2pp::Rect(
-			(int)player_x_ - player_width_ + player_width_ / 2,
-			(int)player_y_ - player_height_ + player_height_ / 2,
+			(int)game_state_.player_x - player_width_ + player_width_ / 2,
+			(int)game_state_.player_y - player_height_ + player_height_ / 2,
 			player_width_,
 			player_height_
 		);
@@ -146,23 +144,23 @@ void Game::Update(float delta_t) {
 	// Velocity updates caused by player actions
 	if (action_flags_ & UP) {
 		if (!(prev_action_flags_ & UP))
-			player_yvel_ = player_jump_force_;
+			game_state_.player_yvel = player_jump_force_;
 	}
 	if (action_flags_ & LEFT) {
-		player_target_direction_ = PlayerDirection::FACING_LEFT;
-		player_xvel_ -= player_acceleration_ * fps_correction;
+		game_state_.player_target_direction = PlayerDirection::FACING_LEFT;
+		game_state_.player_xvel -= player_acceleration_ * fps_correction;
 	}
 	if (action_flags_ & RIGHT) {
-		player_target_direction_ = PlayerDirection::FACING_RIGHT;
-		player_xvel_ += player_acceleration_ * fps_correction;
+		game_state_.player_target_direction = PlayerDirection::FACING_RIGHT;
+		game_state_.player_xvel += player_acceleration_ * fps_correction;
 	}
 
 	// Velocity updates caused by world physics
-	player_xvel_ *= 1.0 - corrected_drag;
-	player_yvel_ += gravity_ * fps_correction;
+	game_state_.player_xvel *= 1.0 - corrected_drag;
+	game_state_.player_yvel += gravity_ * fps_correction;
 
-	player_xvel_ = std::max(-player_max_speed_, std::min(player_xvel_, player_max_speed_));
-	player_yvel_ = std::max(-player_max_speed_, std::min(player_yvel_, player_max_speed_));
+	game_state_.player_xvel = std::max(-player_max_speed_, std::min(game_state_.player_xvel, player_max_speed_));
+	game_state_.player_yvel = std::max(-player_max_speed_, std::min(game_state_.player_yvel, player_max_speed_));
 
 	// Velocity updates caused by collisions
 	CollisionInfo collisions_;
@@ -172,81 +170,81 @@ void Game::Update(float delta_t) {
 		int dist_to_left = (collisions_.GetLeftCollision().x - GetPlayerCollisionRect().x + 1);
 		int step_height = GetPlayerCollisionRect().GetY2() - collisions_.GetLeftCollision().y + 1;
 
-		if (player_xvel_ < -player_speed_epsilon_ && player_xvel_ < -(float)dist_to_left && step_height <= max_step_height_ && player_yvel_ * fps_correction > -step_height)
-			player_yvel_ = -step_height / fps_correction;
+		if (game_state_.player_xvel < -player_speed_epsilon_ && game_state_.player_xvel < -(float)dist_to_left && step_height <= max_step_height_ && game_state_.player_yvel * fps_correction > -step_height)
+			game_state_.player_yvel = -step_height / fps_correction;
 
-		player_xvel_ = std::max(player_xvel_, (float)dist_to_left);
+		game_state_.player_xvel = std::max(game_state_.player_xvel, (float)dist_to_left);
 	}
 	if (collisions_.HasRightCollision()) {
 		int dist_to_right = collisions_.GetRightCollision().x - GetPlayerCollisionRect().GetX2() - 1;
 		int step_height = GetPlayerCollisionRect().GetY2() - collisions_.GetRightCollision().y + 1;
 
-		if (player_xvel_ > -player_speed_epsilon_ && player_xvel_ > (float)dist_to_right && step_height <= max_step_height_ && player_yvel_ * fps_correction > -step_height)
-			player_yvel_ = -step_height / fps_correction;
+		if (game_state_.player_xvel > -player_speed_epsilon_ && game_state_.player_xvel > (float)dist_to_right && step_height <= max_step_height_ && game_state_.player_yvel * fps_correction > -step_height)
+			game_state_.player_yvel = -step_height / fps_correction;
 
-		player_xvel_ = std::min(player_xvel_, (float)dist_to_right);
+		game_state_.player_xvel = std::min(game_state_.player_xvel, (float)dist_to_right);
 	}
 	if (collisions_.HasTopCollision()) {
 		int dist_to_top = collisions_.GetTopCollision() - GetPlayerCollisionRect().y + 1;
-		player_yvel_ = std::max(player_yvel_, (float)dist_to_top);
+		game_state_.player_yvel = std::max(game_state_.player_yvel, (float)dist_to_top);
 	}
 	if (collisions_.HasBottomCollision()) {
 		int dist_to_bottom = collisions_.GetBottomCollision() - GetPlayerCollisionRect().GetY2() - 1;
-		player_yvel_ = std::min(player_yvel_, (float)dist_to_bottom);
+		game_state_.player_yvel = std::min(game_state_.player_yvel, (float)dist_to_bottom);
 	}
 
 	// Update player position
-	player_x_ += player_xvel_ * fps_correction;
-	player_y_ += player_yvel_ * fps_correction;
+	game_state_.player_x += game_state_.player_xvel * fps_correction;
+	game_state_.player_y += game_state_.player_yvel * fps_correction;
 
 	if (action_flags_)
-		player_moved_ = true;
+		game_state_.player_moved = true;
 
 	// Limit world
 	if (GetPlayerRect().x < left_world_bound_)
-		player_x_ += left_world_bound_ - GetPlayerRect().x;
+		game_state_.player_x += left_world_bound_ - GetPlayerRect().x;
 	if (GetPlayerRect().GetX2() > right_world_bound_)
-		player_x_ -= GetPlayerRect().GetX2() - right_world_bound_;
+		game_state_.player_x -= GetPlayerRect().GetX2() - right_world_bound_;
 
 	// Calculate player state
-	if (player_target_direction_ == PlayerDirection::FACING_LEFT)
-		player_direction_ = std::max(player_direction_ - player_turn_speed_ * delta_t, -1.0f);
+	if (game_state_.player_target_direction == PlayerDirection::FACING_LEFT)
+		game_state_.player_direction = std::max(game_state_.player_direction - player_turn_speed_ * delta_t, -1.0f);
 	else
-		player_direction_ = std::min(player_direction_ + player_turn_speed_ * delta_t, 1.0f);
+		game_state_.player_direction = std::min(game_state_.player_direction + player_turn_speed_ * delta_t, 1.0f);
 
-	if (player_yvel_ < -player_tangible_speed_)
-		player_state_ = PlayerState::ASCENDING;
-	else if (player_yvel_ > player_tangible_speed_)
-		player_state_ = PlayerState::DESCENDING;
-	else if (player_xvel_ < -player_tangible_speed_ || player_xvel_ > player_tangible_speed_)
-		player_state_ = PlayerState::MOVING;
+	if (game_state_.player_yvel < -player_tangible_speed_)
+		game_state_.player_state = PlayerState::ASCENDING;
+	else if (game_state_.player_yvel > player_tangible_speed_)
+		game_state_.player_state = PlayerState::DESCENDING;
+	else if (game_state_.player_xvel < -player_tangible_speed_ || game_state_.player_xvel > player_tangible_speed_)
+		game_state_.player_state = PlayerState::MOVING;
 	else
-		player_state_ = PlayerState::STILL;
+		game_state_.player_state = PlayerState::STILL;
 
 	// Player rectangle
 	SDL2pp::Rect player_rect = GetPlayerRect();
 
 	// Deposit coins
 	if (player_rect.Intersects(deposit_area_rect_)) {
-		if (!is_in_deposit_area_)
+		if (!game_state_.is_in_deposit_area)
 			DepositCoins();
-		is_in_deposit_area_ = true;
+		game_state_.is_in_deposit_area = true;
 	} else {
-		is_in_deposit_area_ = false;
+		game_state_.is_in_deposit_area = false;
 
 		// Collect coins (only if not in deposit area)
 		for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++)
-			if (!picked_coins_[ncoin] && player_rect.Intersects(GetCoinRect(coin_locations_[ncoin])))
-				picked_coins_[ncoin] = true;
+			if (!game_state_.picked_coins[ncoin] && player_rect.Intersects(GetCoinRect(coin_locations_[ncoin])))
+				game_state_.picked_coins[ncoin] = true;
 	}
 
 	// Handle player leaving play area
 	if (player_rect.Intersects(play_area_rect_)) {
-		is_in_play_area_ = true;
+		game_state_.is_in_play_area = true;
 	} else {
-		if (is_in_play_area_)
-			playarea_leave_moment_ = std::chrono::steady_clock::now();
-		is_in_play_area_ = false;
+		if (game_state_.is_in_play_area)
+			game_state_.playarea_leave_moment = std::chrono::steady_clock::now();
+		game_state_.is_in_play_area = false;
 	}
 
 	// Update tile cache
@@ -262,16 +260,16 @@ void Game::Render() {
 
 	// draw coins
 	for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++)
-		if (!picked_coins_[ncoin])
+		if (!game_state_.picked_coins[ncoin])
 			renderer_.Copy(coin_texture_, SDL2pp::NullOpt, GetCoinRect(coin_locations_[ncoin]) - SDL2pp::Point(camerarect.x, camerarect.y));
 
 	// draw player
 	{
-		int player_rect_shrink = (int)((float)GetPlayerRect().w / 2.0f * (1.0f - std::abs(player_direction_)));
-		int flipflag = (player_direction_ < 0.0f) ? SDL_FLIP_HORIZONTAL : 0;
+		int player_rect_shrink = (int)((float)GetPlayerRect().w / 2.0f * (1.0f - std::abs(game_state_.player_direction)));
+		int flipflag = (game_state_.player_direction < 0.0f) ? SDL_FLIP_HORIZONTAL : 0;
 		renderer_.Copy(
 				player_texture_,
-				SDL2pp::Rect(GetPlayerRect().w * (int)player_state_, 0, GetPlayerRect().w, GetPlayerRect().h),
+				SDL2pp::Rect(GetPlayerRect().w * (int)game_state_.player_state, 0, GetPlayerRect().w, GetPlayerRect().h),
 				GetPlayerRect().GetExtension(-player_rect_shrink, 0) - SDL2pp::Point(camerarect.x, camerarect.y),
 				0.0f,
 				SDL2pp::NullOpt,
@@ -279,7 +277,7 @@ void Game::Render() {
 	}
 
 	// draw messages
-	if (std::chrono::steady_clock::now() < deposit_message_expiration_) {
+	if (std::chrono::steady_clock::now() < game_state_.deposit_message_expiration) {
 		if (deposit_big_message_) {
 			SDL2pp::Point pos(
 					camerarect.w / 2 - deposit_big_message_->GetWidth() / 2,
@@ -298,7 +296,7 @@ void Game::Render() {
 		}
 	}
 
-	if (!player_moved_) {
+	if (!game_state_.player_moved) {
 		SDL2pp::Point pos(
 				camerarect.w / 2 - arrowkeys_message_.GetWidth() / 2,
 				camerarect.h - arrowkeys_message_.GetHeight() - 20
@@ -307,8 +305,8 @@ void Game::Render() {
 		renderer_.Copy(arrowkeys_message_, SDL2pp::NullOpt, pos);
 	}
 
-	if (!is_in_play_area_) {
-		auto msec_since_escape = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - playarea_leave_moment_).count();
+	if (!game_state_.is_in_play_area) {
+		auto msec_since_escape = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - game_state_.playarea_leave_moment).count();
 
 		if (msec_since_escape < 5 * 2500 && msec_since_escape % 2500 < 1500 && msec_since_escape % 500 < 250) {
 			SDL2pp::Point pos(
@@ -322,8 +320,8 @@ void Game::Render() {
 }
 
 void Game::DepositCoins() {
-	size_t numcoins = std::count(picked_coins_.begin(), picked_coins_.end(), true);
-	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - session_start_).count();
+	size_t numcoins = std::count(game_state_.picked_coins.begin(), game_state_.picked_coins.end(), true);
+	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - game_state_.session_start).count();
 
 	{
 		std::stringstream message;
@@ -368,9 +366,9 @@ void Game::DepositCoins() {
 			deposit_small_message_.reset(nullptr);
 	}
 
-	std::fill(picked_coins_.begin(), picked_coins_.end(), false);
-	session_start_ = std::chrono::steady_clock::now();
-	deposit_message_expiration_ = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+	std::fill(game_state_.picked_coins.begin(), game_state_.picked_coins.end(), false);
+	game_state_.session_start = std::chrono::steady_clock::now();
+	game_state_.deposit_message_expiration = std::chrono::steady_clock::now() + std::chrono::seconds(3);
 }
 
 std::string Game::GetStatePath() {
@@ -413,21 +411,21 @@ void Game::SaveState() const {
 	statefile << (int)0 << std::endl;
 
 	// playtime
-	statefile << std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - session_start_).count() << std::endl;
+	statefile << std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - game_state_.session_start).count() << std::endl;
 
 	// player direction
-	statefile << (player_target_direction_ == PlayerDirection::FACING_RIGHT) << std::endl;
+	statefile << (game_state_.player_target_direction == PlayerDirection::FACING_RIGHT) << std::endl;
 
 	// player coords
 	statefile << std::setprecision(2);
 	statefile << std::fixed;
 
-	statefile << player_x_ << std::endl;
-	statefile << player_y_ << std::endl;
+	statefile << game_state_.player_x << std::endl;
+	statefile << game_state_.player_y << std::endl;
 
 	// coins
 	for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++)
-		statefile << picked_coins_[ncoin] << std::endl;
+		statefile << game_state_.picked_coins[ncoin] << std::endl;
 }
 
 void Game::LoadState() {
@@ -446,35 +444,35 @@ void Game::LoadState() {
 		long playtime;
 		statefile >> playtime;
 
-		session_start_ = std::chrono::steady_clock::now() - std::chrono::seconds(playtime);
+		game_state_.session_start = std::chrono::steady_clock::now() - std::chrono::seconds(playtime);
 
 		// player direction
 		bool right;
 		statefile >> right;
 
 		if (right) {
-			player_target_direction_ = PlayerDirection::FACING_RIGHT;
-			player_direction_ = 1.0;
+			game_state_.player_target_direction = PlayerDirection::FACING_RIGHT;
+			game_state_.player_direction = 1.0;
 		} else {
-			player_target_direction_ = PlayerDirection::FACING_LEFT;
-			player_direction_ = -1.0;
+			game_state_.player_target_direction = PlayerDirection::FACING_LEFT;
+			game_state_.player_direction = -1.0;
 		}
 
 		// player coords
-		statefile >> player_x_;
-		statefile >> player_y_;
+		statefile >> game_state_.player_x;
+		statefile >> game_state_.player_y;
 
 		// coins
 		for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++) {
 			bool tmp;
 			statefile >> tmp;
-			picked_coins_[ncoin] = tmp;
+			game_state_.picked_coins[ncoin] = tmp;
 		}
 
 		// other new game overrides
-		is_in_deposit_area_ = true; // prevent re-deposit
-		is_in_play_area_ = false;   // prevent "leave to playe area" message
-		player_moved_ = true;       // prevent arrow keys message
+		game_state_.is_in_deposit_area = true; // prevent re-deposit
+		game_state_.is_in_play_area = false;   // prevent "leave to playe area" message
+		game_state_.player_moved = true;       // prevent arrow keys message
 	} else {
 		std::cerr << "Warning: could not read game state from " << path << ", incompatible version " << version << std::endl;
 		return;
