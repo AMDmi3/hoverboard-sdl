@@ -25,10 +25,27 @@ So there's plenty of reasons to have a proper native application,
 and, given that Randall makes the art available under [CC-by-NC
 license](https://xkcd.com/license.html), I want to accomplish that.
 
+## Features
+
 I consider this a feature-complete reimplementation - it provides
 the complete experience of the original hame and only lacks some
 hidden features like Gandalf mode. The project is now focused on
 optimization and extra features (such as game state saving).
+
+Extra features compared to original:
+
+* **Persistent state** - when you leave the game, you location and
+  picked coins are saved, so when you run the game again, you may
+  continue your journey from the same point
+* **Saved locations** - you may save up to 10 locations and return
+  to them with a single key press
+
+## Controls
+
+* **Arrow keys** or **WASD** or **HJKL** - move character
+* **Esc** or **Q** - leave the game
+* **Ctrl+0**, **Ctrl+1** ... **Ctrl+9** - save player location
+* **0**, **1** ... **9** - jump to corresponding saved location
 
 ## Building
 
