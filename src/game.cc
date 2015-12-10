@@ -420,12 +420,20 @@ void Game::SaveState() const {
 	statefile << std::setprecision(2);
 	statefile << std::fixed;
 
-	statefile << game_state_.player_x << std::endl;
-	statefile << game_state_.player_y << std::endl;
+	statefile << game_state_.player_x << " " << game_state_.player_y << std::endl;
 
 	// coins
 	for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++)
-		statefile << game_state_.picked_coins[ncoin] << std::endl;
+		statefile << (ncoin ? " " : "") << game_state_.picked_coins[ncoin];
+	statefile << std::endl;
+
+	// saved locations
+	for (int nloc = 0; nloc < num_saved_locations_; nloc++) {
+		if (game_state_.saved_locations[nloc])
+			statefile << true << " " << game_state_.saved_locations[nloc]->first << " " << game_state_.saved_locations[nloc]->second << std::endl;
+		else
+			statefile << false << std::endl;
+	}
 }
 
 void Game::LoadState() {
@@ -470,6 +478,17 @@ void Game::LoadState() {
 			statefile >> tmp;
 			new_state.picked_coins[ncoin] = tmp;
 		}
+
+		for (int nloc = 0; nloc < num_saved_locations_; nloc++) {
+			bool active;
+			float x, y;
+			statefile >> active;
+
+			if (active) {
+				statefile >> x >> y;
+				new_state.saved_locations[nloc] = std::make_pair(x, y);
+			}
+		}
 	} else {
 		std::cerr << "Warning: could not read game state from " << path << ", incompatible version " << version << std::endl;
 		return;
@@ -486,4 +505,16 @@ void Game::LoadState() {
 	}
 
 	game_state_ = new_state;
+}
+
+void Game::SaveLocation(int n) {
+	if (n >= 0 && n < num_saved_locations_)
+		game_state_.saved_locations[n] = std::make_pair(game_state_.player_x, game_state_.player_y);
+}
+
+void Game::JumpToLocation(int n) {
+	if (n >= 0 && n < num_saved_locations_ && game_state_.saved_locations[n]) {
+		game_state_.player_x = game_state_.saved_locations[n]->first;
+		game_state_.player_y = game_state_.saved_locations[n]->second;
+	}
 }

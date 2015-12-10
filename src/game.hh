@@ -26,6 +26,7 @@
 #include <vector>
 #include <chrono>
 #include <memory>
+#include <array>
 
 #include <SDL2pp/Rect.hh>
 #include <SDL2pp/Texture.hh>
@@ -91,6 +92,8 @@ private:
 	constexpr static SDL2pp::Rect deposit_area_rect_ = SDL2pp::Rect::FromCorners(512257, -549650, 512309, -549584);
 	constexpr static SDL2pp::Rect play_area_rect_ = SDL2pp::Rect::FromCorners(511484, -550619, 513026, -549568);
 
+	constexpr static int num_saved_locations_ = 10;
+
 private:
 	SDL2pp::Renderer& renderer_;
 
@@ -141,6 +144,9 @@ private:
 
 		// Coins
 		std::vector<bool> picked_coins = std::vector<bool>(coin_locations_.size(), false);
+
+		// Teleport locations
+		std::array<SDL2pp::Optional<std::pair<float, float>>, num_saved_locations_> saved_locations;
 	};
 
 	GameState game_state_;
@@ -168,6 +174,9 @@ public:
 
 	void LoadState();
 	void SaveState() const;
+
+	void SaveLocation(int n);
+	void JumpToLocation(int n);
 };
 
 #endif // GAME_HH

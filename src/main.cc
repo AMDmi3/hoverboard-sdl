@@ -20,6 +20,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <map>
 
 #include <SDL2/SDL.h>
 
@@ -30,6 +31,19 @@
 #include <SDL2pp/Texture.hh>
 
 #include "game.hh"
+
+static const std::map<SDL_Keycode, int> teleport_slots = {
+	{ SDLK_0, 0 },
+	{ SDLK_1, 1 },
+	{ SDLK_2, 2 },
+	{ SDLK_3, 3 },
+	{ SDLK_4, 4 },
+	{ SDLK_5, 5 },
+	{ SDLK_6, 6 },
+	{ SDLK_7, 7 },
+	{ SDLK_8, 8 },
+	{ SDLK_9, 9 },
+};
 
 int main(int /*argc*/, char** /*argv*/) try {
 	// SDL stuff
@@ -73,6 +87,14 @@ int main(int /*argc*/, char** /*argv*/) try {
 				case SDLK_DOWN: case SDLK_s: case SDLK_j:
 					game.SetActionFlag(Game::DOWN);
 					break;
+				}
+
+				auto teleport_slot = teleport_slots.find(event.key.keysym.sym);
+				if (teleport_slot != teleport_slots.end()) {
+					if (SDL_GetModState() & KMOD_CTRL)
+						game.SaveLocation(teleport_slot->second);
+					else
+						game.JumpToLocation(teleport_slot->second);
 				}
 			} else if (event.type == SDL_KEYUP) {
 				switch (event.key.keysym.sym) {
