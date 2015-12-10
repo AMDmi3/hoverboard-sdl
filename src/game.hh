@@ -94,12 +94,17 @@ private:
 
 	constexpr static int num_saved_locations_ = 10;
 
+	constexpr static int portal_effect_duration_ms_ = 500;
+	constexpr static int portal_effect_size_ = 10;
+
 private:
 	SDL2pp::Renderer& renderer_;
 
 	// Resources
 	SDL2pp::Texture coin_texture_;
 	SDL2pp::Texture player_texture_;
+	SDL2pp::Texture player_texture_b_;
+	SDL2pp::Texture player_texture_y_;
 	SDL2pp::Font font_18_;
 	SDL2pp::Font font_20_;
 	SDL2pp::Font font_34_;
@@ -117,6 +122,26 @@ private:
 	int action_flags_ = 0;
 	int prev_action_flags_ = 0;
 
+	// Portal effects
+	struct PortalEffect {
+		enum {
+			SAVE,
+			ENTRY,
+			EXIT
+		} type;
+
+		float player_x;
+		float player_y;
+
+		float player_direction;
+		PlayerState player_state;
+
+		std::chrono::steady_clock::time_point start;
+	};
+
+	std::list<PortalEffect> portal_effects_;
+
+	// Game state
 	struct GameState {
 		// Timing
 		std::chrono::steady_clock::time_point deposit_message_expiration;

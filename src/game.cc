@@ -35,11 +35,14 @@
 constexpr SDL2pp::Rect Game::deposit_area_rect_;
 constexpr SDL2pp::Rect Game::play_area_rect_;
 constexpr float Game::player_max_speed_;
+constexpr int Game::portal_effect_duration_ms_;
 
 Game::Game(SDL2pp::Renderer& renderer)
 	: renderer_(renderer),
 	  coin_texture_(renderer_, DATADIR "/coin.png"),
 	  player_texture_(renderer_, DATADIR "/all-four.png"),
+	  player_texture_b_(renderer_, DATADIR "/all-four-b.png"),
+	  player_texture_y_(renderer_, DATADIR "/all-four-y.png"),
 	  font_18_(DATADIR "/xkcd-Regular.otf", 18),
 	  font_20_(DATADIR "/xkcd-Regular.otf", 20),
 	  font_34_(DATADIR "/xkcd-Regular.otf", 34),
@@ -117,6 +120,8 @@ void Game::LoadVisibleTiles() {
 }
 
 void Game::Update(float delta_t) {
+	auto now = std::chrono::steady_clock::now();
+
 	// All original game constants work at 60 fps fixed frame
 	// rate and do not take real frame time into account, so
 	// we have to adjust these for our arbitrary fps.
@@ -247,9 +252,14 @@ void Game::Update(float delta_t) {
 		game_state_.is_in_play_area = true;
 	} else {
 		if (game_state_.is_in_play_area)
-			game_state_.playarea_leave_moment = std::chrono::steady_clock::now();
+			game_state_.playarea_leave_moment = now;
 		game_state_.is_in_play_area = false;
 	}
+
+	// remove obsolete portals
+	portal_effects_.remove_if([now](const PortalEffect& e) {
+			return e.start + std::chrono::milliseconds(portal_effect_duration_ms_) < now;
+		});
 
 	// Update tile cache
 	tile_cache_.UpdateCache(GetCameraRect().GetExtension(512));
@@ -259,6 +269,7 @@ void Game::Update(float delta_t) {
 
 void Game::Render() {
 	SDL2pp::Rect camerarect = GetCameraRect();
+	auto now = std::chrono::steady_clock::now();
 
 	tile_cache_.Render(camerarect);
 
@@ -266,6 +277,43 @@ void Game::Render() {
 	for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++)
 		if (!game_state_.picked_coins[ncoin])
 			renderer_.Copy(coin_texture_, SDL2pp::NullOpt, GetCoinRect(coin_locations_[ncoin]) - SDL2pp::Point(camerarect.x, camerarect.y));
+
+	// draw portal effects
+	for (auto& effect : portal_effects_) {
+		// effect state in [0.0, 1.0]
+		float effect_state = (float)std::chrono::duration_cast<std::chrono::milliseconds>(now - effect.start).count() / (float)portal_effect_duration_ms_;
+
+		if (effect_state > 1.0)
+			continue;
+
+		// pixels to extend effect
+		float effect_shrink = (effect.type == PortalEffect::ENTRY) ? portal_effect_size_ - effect_state * portal_effect_size_ : effect_state * portal_effect_size_;
+
+		SDL2pp::Rect rect = GetPlayerRect(effect.player_x, effect.player_y);
+		int player_rect_shrink = (int)((float)rect.w / 2.0f * (1.0f - std::abs(effect.player_direction)));
+		int flipflag = (effect.player_direction < 0.0f) ? SDL_FLIP_HORIZONTAL : 0;
+
+		// texture to use
+		SDL2pp::Texture* texture;
+
+		switch (effect.type) {
+		case PortalEffect::ENTRY: texture = &player_texture_y_; break;
+		case PortalEffect::EXIT:  texture = &player_texture_b_; break;
+		default:                  texture = &player_texture_; break;
+		}
+
+		texture->SetAlphaMod((1.0 - effect_state) * 255.0);
+
+		renderer_.Copy(
+				*texture,
+				SDL2pp::Rect(rect.w * (int)effect.player_state, 0, rect.w, rect.h),
+				rect.GetExtension(-player_rect_shrink + (int)effect_shrink, (int)effect_shrink) - SDL2pp::Point(camerarect.x, camerarect.y),
+				0.0f,
+				SDL2pp::NullOpt,
+				flipflag);
+
+		texture->SetAlphaMod(255);
+	}
 
 	// draw player
 	{
@@ -281,7 +329,7 @@ void Game::Render() {
 	}
 
 	// draw messages
-	if (std::chrono::steady_clock::now() < game_state_.deposit_message_expiration) {
+	if (now < game_state_.deposit_message_expiration) {
 		if (deposit_big_message_) {
 			SDL2pp::Point pos(
 					camerarect.w / 2 - deposit_big_message_->GetWidth() / 2,
@@ -310,7 +358,7 @@ void Game::Render() {
 	}
 
 	if (!game_state_.is_in_play_area) {
-		auto msec_since_escape = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - game_state_.playarea_leave_moment).count();
+		auto msec_since_escape = std::chrono::duration_cast<std::chrono::milliseconds>(now - game_state_.playarea_leave_moment).count();
 
 		if (msec_since_escape < 5 * 2500 && msec_since_escape % 2500 < 1500 && msec_since_escape % 500 < 250) {
 			SDL2pp::Point pos(
@@ -512,13 +560,47 @@ void Game::LoadState() {
 }
 
 void Game::SaveLocation(int n) {
-	if (n >= 0 && n < num_saved_locations_)
+	if (n >= 0 && n < num_saved_locations_) {
 		game_state_.saved_locations[n] = std::make_pair(game_state_.player_x, game_state_.player_y);
+
+		portal_effects_.emplace_back(
+				PortalEffect {
+					PortalEffect::SAVE,
+					game_state_.player_x,
+					game_state_.player_y,
+					game_state_.player_direction,
+					game_state_.player_state,
+					std::chrono::steady_clock::now()
+				}
+			);
+	}
 }
 
 void Game::JumpToLocation(int n) {
 	if (n >= 0 && n < num_saved_locations_ && game_state_.saved_locations[n]) {
+		portal_effects_.emplace_back(
+				PortalEffect {
+					PortalEffect::ENTRY,
+					game_state_.player_x,
+					game_state_.player_y,
+					game_state_.player_direction,
+					game_state_.player_state,
+					std::chrono::steady_clock::now()
+				}
+			);
+
 		game_state_.player_x = game_state_.saved_locations[n]->first;
 		game_state_.player_y = game_state_.saved_locations[n]->second;
+
+		portal_effects_.emplace_back(
+				PortalEffect {
+					PortalEffect::EXIT,
+					game_state_.player_x,
+					game_state_.player_y,
+					game_state_.player_direction,
+					game_state_.player_state,
+					std::chrono::steady_clock::now()
+				}
+			);
 	}
 }
