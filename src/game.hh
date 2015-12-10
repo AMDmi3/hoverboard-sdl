@@ -162,6 +162,7 @@ public:
 	void ClearActionFlag(int flag);
 
 	SDL2pp::Rect GetCameraRect() const;
+	SDL2pp::Rect GetPlayerRect(float x, float y) const;
 	SDL2pp::Rect GetPlayerRect() const;
 	SDL2pp::Rect GetPlayerCollisionRect() const;
 	SDL2pp::Rect GetCoinRect(const SDL2pp::Point& coin) const;

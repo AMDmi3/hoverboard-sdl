@@ -76,13 +76,17 @@ SDL2pp::Rect Game::GetCameraRect() const {
 	return rect;
 }
 
-SDL2pp::Rect Game::GetPlayerRect() const {
+SDL2pp::Rect Game::GetPlayerRect(float x, float y) const {
 	return SDL2pp::Rect(
-			(int)game_state_.player_x - player_width_ + player_width_ / 2,
-			(int)game_state_.player_y - player_height_ + player_height_ / 2,
+			(int)x - player_width_ + player_width_ / 2,
+			(int)y - player_height_ + player_height_ / 2,
 			player_width_,
 			player_height_
 		);
+}
+
+SDL2pp::Rect Game::GetPlayerRect() const {
+	return GetPlayerRect(game_state_.player_x, game_state_.player_y);
 }
 
 SDL2pp::Rect Game::GetPlayerCollisionRect() const {
