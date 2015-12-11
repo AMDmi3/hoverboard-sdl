@@ -22,7 +22,9 @@ ELSEIF(STANDALONE)
 ENDIF(SYSTEMWIDE)
 
 # flags
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -pedantic")
+IF(NOT MSVC)
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -pedantic")
+ENDIF(NOT MSVC)
 
 # depends
 IF(NOT EXISTS ${PROJECT_SOURCE_DIR}/extlibs/libSDL2pp/CMakeLists.txt)
