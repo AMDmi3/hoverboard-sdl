@@ -111,15 +111,27 @@ Tile::Tile(const SDL2pp::Point& coords)
 Tile::~Tile() {
 }
 
+SDL2pp::Point Tile::CoordsForPoint(const SDL2pp::Point& p) {
+	return SDL2pp::Point(FloorDiv(p.x, tile_size_), FloorDiv(p.y, tile_size_));
+}
+
+SDL2pp::Rect Tile::RectForCoords(const SDL2pp::Point& p) {
+	return SDL2pp::Rect(p.x * tile_size_, p.y * tile_size_, tile_size_, tile_size_);
+}
+
 SDL2pp::Point Tile::GetCoords() const {
 	return coords_;
 }
 
 SDL2pp::Rect Tile::GetRect() const {
-	return SDL2pp::Rect(coords_.x * tile_size_, coords_.y * tile_size_, tile_size_, tile_size_);
+	return RectForCoords(coords_);
 }
 
-void Tile::Materialize(SDL2pp::Renderer& renderer) {
+bool Tile::NeedsUpgrade() const {
+	return visual_data_->NeedsUpgrade();
+}
+
+void Tile::Upgrade(SDL2pp::Renderer& renderer) {
 	if (visual_data_->NeedsUpgrade()) {
 		auto upgrade = visual_data_->Upgrade(renderer);
 		visual_data_ = std::move(upgrade);

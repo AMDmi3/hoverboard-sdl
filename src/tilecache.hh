@@ -43,11 +43,12 @@ private:
 
 	TileMap tiles_;
 	size_t cache_size_;
+	std::list<SDL2pp::Point> lru_heavy_tiles_;
 
 	// background loader
 	std::thread loader_thread_;
 	std::list<SDL2pp::Point> loader_queue_;
-	std::list<std::pair<SDL2pp::Point, Tile>> loaded_tiles_;
+	std::map<SDL2pp::Point, Tile> loaded_tiles_;
 	SDL2pp::Optional<SDL2pp::Point> currently_loading_;
 
 	std::mutex loader_queue_mutex_;
@@ -58,8 +59,8 @@ private:
 private:
 	template<class T>
 	void ProcessTilesInRect(const SDL2pp::Rect& rect, T processor) {
-		SDL2pp::Point start_tile = Tile::TileForPoint(SDL2pp::Point(rect.x, rect.y));
-		SDL2pp::Point end_tile = Tile::TileForPoint(SDL2pp::Point(rect.GetX2(), rect.GetY2()));
+		SDL2pp::Point start_tile = Tile::CoordsForPoint(SDL2pp::Point(rect.x, rect.y));
+		SDL2pp::Point end_tile = Tile::CoordsForPoint(SDL2pp::Point(rect.GetX2(), rect.GetY2()));
 
 		SDL2pp::Point tilecoord;
 		for (tilecoord.x = start_tile.x; tilecoord.x <= end_tile.x; tilecoord.x++)
@@ -74,7 +75,7 @@ public:
 	void SetCacheSize(size_t cache_size);
 
 	void PreloadTilesSync(const SDL2pp::Rect& rect);
-	void UpdateCache(const SDL2pp::Rect& rect);
+	void UpdateCache(const SDL2pp::Rect& rect, int xprecache, int yprecache);
 	void Render(const SDL2pp::Rect& rect);
 
 	void UpdateCollisions(CollisionInfo& collisions, const SDL2pp::Rect& rect, int distance);

@@ -247,7 +247,7 @@ void Game::Update(float delta_t) {
 	}
 
 	// Update tile cache
-	tile_cache_.UpdateCache(GetCameraRect().GetExtension(512));
+	tile_cache_.UpdateCache(GetCameraRect(), 512, 512);
 
 	prev_action_flags_ = action_flags_;
 }

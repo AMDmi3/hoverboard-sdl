@@ -157,9 +157,8 @@ private:
 	static std::string MakeTilePath(const SDL2pp::Point& coords);
 
 public:
-	static SDL2pp::Point TileForPoint(const SDL2pp::Point& p) {
-		return SDL2pp::Point(FloorDiv(p.x, tile_size_), FloorDiv(p.y, tile_size_));
-	}
+	static SDL2pp::Point CoordsForPoint(const SDL2pp::Point& p);
+	static SDL2pp::Rect RectForCoords(const SDL2pp::Point& p);
 
 public:
 	Tile(const SDL2pp::Point& coords);
@@ -173,7 +172,8 @@ public:
 	SDL2pp::Point GetCoords() const;
 	SDL2pp::Rect GetRect() const;
 
-	void Materialize(SDL2pp::Renderer& renderer);
+	bool NeedsUpgrade() const;
+	void Upgrade(SDL2pp::Renderer& renderer);
 	void Render(SDL2pp::Renderer& renderer, const SDL2pp::Rect& viewport);
 
 	void CheckLeftCollision(CollisionInfo& coll, const SDL2pp::Rect& rect) const;
