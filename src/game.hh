@@ -194,7 +194,6 @@ public:
 	void SetActionFlag(int flag);
 	void ClearActionFlag(int flag);
 
-	void LoadVisibleTiles();
 	void Update(float delta_t);
 	void Render();
 

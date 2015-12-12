@@ -19,73 +19,11 @@
 
 #include "tilecache.hh"
 
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <sstream>
 #include <set>
-#include <list>
 #include <cassert>
 #include <cmath>
 
-#include <SDL2/SDL_surface.h>
-
-#include <SDL2pp/Surface.hh>
-
-#include "tiles.hh"
 #include "collision.hh"
-#include "passability.hh"
-
-std::string TileCache::MakeTilePath(const SDL2pp::Point& coords) {
-	std::stringstream filename;
-	filename << DATADIR << "/" << coords.x << "/" << coords.y << ".png";
-	return filename.str();
-}
-
-TileCache::SurfacePtr TileCache::LoadTileData(const SDL2pp::Point& coords) {
-	std::string path = MakeTilePath(coords);
-
-	struct stat st;
-	if (stat(path.c_str(), &st) == 0)
-		return SurfacePtr(new SDL2pp::Surface(path));
-
-	return SurfacePtr();
-}
-
-TileCache::TileMap::iterator TileCache::CreateTile(const SDL2pp::Point& coords, SurfacePtr surface) {
-	TilePtr new_tile;
-
-	if (surface) {
-		PassabilityMap passability;
-
-		SDL2pp::Surface::LockHandle lock = surface->Lock();
-		unsigned char* line = static_cast<unsigned char*>(lock.GetPixels());
-		int pitch = lock.GetPitch();
-		int bytesperpixel = lock.GetFormat().BytesPerPixel;
-		SDL_Color* palette = surface->Get()->format->palette ? surface->Get()->format->palette->colors : nullptr;
-
-		for (int y = 0; y < 512; y++) {
-			unsigned char* pixel = line;
-			for (int x = 0; x < 512; x++) {
-				unsigned char color = *pixel;
-				if (palette)
-					color = palette[color].r;
-
-				if (color < 100 && !(color & 1))
-					passability.Set(x, y);
-
-				pixel += bytesperpixel;
-			}
-			line += pitch;
-		}
-
-		new_tile.reset(new TextureTile(coords, SDL2pp::Texture(renderer_, *surface), std::move(passability)));
-	} else {
-		new_tile.reset(new EmptyTile(coords));
-	}
-
-	return tiles_.insert(std::make_pair(coords, std::move(new_tile))).first;
-}
 
 TileCache::TileCache(SDL2pp::Renderer& renderer) : renderer_(renderer), cache_size_(64), finish_thread_(false) {
 	loader_thread_ = std::thread([this](){
@@ -110,14 +48,18 @@ TileCache::TileCache(SDL2pp::Renderer& renderer) : renderer_(renderer), cache_si
 
 				lock.unlock();
 
-				SurfacePtr ptr = LoadTileData(current_tile);
+				Tile tile(current_tile);
 
 				lock.lock();
 
 				// save loaded tile into list so it's converted to
 				// texture from main thread later
-				loaded_list_.push_back(std::make_pair(current_tile, std::move(ptr)));
+				loaded_tiles_.emplace(*currently_loading_, std::move(tile));
 				currently_loading_ = SDL2pp::NullOpt;
+
+				// wakeup main thread which may be waiting for us
+				if (loader_queue_.empty())
+					loader_queue_condvar_.notify_all();
 			}
 		});
 }
@@ -136,64 +78,97 @@ void TileCache::SetCacheSize(size_t cache_size) {
 	cache_size_ = cache_size;
 }
 
-void TileCache::PreloadTilesSync(const SDL2pp::Rect& rect) {
-	ProcessTilesInRect(rect, [this](const SDL2pp::Point tilecoord) {
-			if (tiles_.find(tilecoord) == tiles_.end())
-				CreateTile(tilecoord, LoadTileData(tilecoord));
-		});
-}
-
-void TileCache::UpdateCache(const SDL2pp::Rect& rect) {
+void TileCache::UpdateCache(const SDL2pp::Rect& rect, int xprecache, int yprecache) {
+	// we only have one upgrade candidate per frame, as
+	// upgrading takes time and upgradeing multiple tiles
+	// may cause lags
+	SDL2pp::Optional<TileMap::iterator> upgrade_candidate;
 	std::set<SDL2pp::Point> seen_tiles;
 
 	{
-		std::lock_guard<std::mutex> lock(loader_queue_mutex_);
+		std::unique_lock<std::mutex> lock(loader_queue_mutex_);
 
-		// First, materialize all freshly loaded tiles
-		for (auto& loaded : loaded_list_)
-			CreateTile(loaded.first, std::move(loaded.second));
+		// clear queue, we'll for new one
+		loader_queue_.clear();
 
-		loaded_list_.clear();
+		// flush downloader output
+		for (auto& tile : loaded_tiles_) {
+			tiles_.emplace(std::make_pair(tile.first, std::move(tile.second)));
+			seen_tiles.insert(tile.first);
+		}
+		loaded_tiles_.clear();
 
-		// Next add all missing tiles to the queue
-		std::list<SDL2pp::Point> missing_tiles;
+		//
+		// Synchronous phase. If we have anything to load here, it will
+		// cause lags, but there's no other option to draw the consistent
+		// image and to handle physics properly.
+		//
 
-		ProcessTilesInRect(rect, [this, &missing_tiles, &seen_tiles](const SDL2pp::Point& tilecoord) {
-				if (tiles_.find(tilecoord) == tiles_.end() && (!currently_loading_ || *currently_loading_ != tilecoord))
-					missing_tiles.push_back(tilecoord);
-				else
-					seen_tiles.insert(tilecoord);
+		// first, if needed tile is currently loading, wait for this tile
+		if (currently_loading_ && Tile::RectForCoords(*currently_loading_).Intersects(rect))
+			loader_queue_condvar_.wait(lock, [&](){ return !currently_loading_; } );
+
+		// next, forcibly load and upgrade all visible tiles
+		ProcessTilesInRect(rect, [this, &seen_tiles](const SDL2pp::Point& tilecoord) {
+				auto tile_iter = tiles_.find(tilecoord);
+				if (tile_iter == tiles_.end())
+					tile_iter = tiles_.emplace(tilecoord, Tile(tilecoord)).first;
+
+				if (tile_iter->second.NeedsUpgrade())
+					tile_iter->second.Upgrade(renderer_);
+				seen_tiles.insert(tile_iter->first);
 			});
 
-		// Update loader queue
-		loader_queue_.swap(missing_tiles);
+		//
+		// Async phase. Now we work with extended rectangle and form
+		// a new queue for downloader and a candidate for upgrade
+		//
+
+		// make new queue
+		ProcessTilesInRect(rect.GetExtension(xprecache, yprecache), [this, &upgrade_candidate](const SDL2pp::Point& tilecoord) {
+				auto tile_iter = tiles_.find(tilecoord);
+				if (tile_iter == tiles_.end()) {
+					if (!currently_loading_ || *currently_loading_ != tilecoord)
+						loader_queue_.emplace_back(tilecoord);
+				} else {
+					// XXX: use some more clever alg here? pick closest tile perhaps
+					if (tile_iter->second.NeedsUpgrade())
+						upgrade_candidate = tile_iter;
+				}
+			});
 	}
 
-	// Slap loader thread to start loading new tile if it was sleeping
+	// upgrade single tile
+	if (upgrade_candidate)
+		(*upgrade_candidate)->second.Upgrade(renderer_);
+
+	// ping loader to start crunching the new queue
 	loader_queue_condvar_.notify_all();
 
-	// Cleanup extra tiles
-	if (tiles_.size() > cache_size_) {
-		// Sort all known tiles by distance from viewer
-		std::map<int, SDL2pp::Point> tiles_for_removal;
-		for (auto& tile : tiles_) {
-			if (seen_tiles.find(tile.first) != seen_tiles.end())
-				continue;
+	// sort lru info
+	{
+		// this would not needed if we've used some sort of associative container with
+		// embedded linked list for LRU info; I'm too lazy to write one now
+		std::list<SDL2pp::Point> new_lru;
+		for (auto& tile : seen_tiles)
+			new_lru.push_back(tile);
+		for (auto& tile : lru_heavy_tiles_)
+			if (seen_tiles.find(tile) == seen_tiles.end())
+				new_lru.push_back(tile);
 
-			SDL2pp::Point delta = Tile::TileForPoint(SDL2pp::Point(rect.x + rect.w/2, rect.y + rect.h/2)) - tile.first;
-			int distance = std::abs(delta.x) + std::abs(delta.y);
-			tiles_for_removal.insert(std::make_pair(distance, tile.first));
-		}
+		lru_heavy_tiles_.swap(new_lru);
+	}
 
-		// Remove furthest
-		for (auto iter = tiles_for_removal.rbegin(); iter != tiles_for_removal.rend() && tiles_.size() > cache_size_; iter++)
-			tiles_.erase(iter->second);
+	// finally, cleanup some old tiles
+	while (tiles_.size() > cache_size_) {
+		tiles_.erase(lru_heavy_tiles_.back());
+		lru_heavy_tiles_.pop_back();
 	}
 }
 
 void TileCache::Render(const SDL2pp::Rect& rect) {
-	SDL2pp::Point start_tile = Tile::TileForPoint(SDL2pp::Point(rect.x, rect.y));
-	SDL2pp::Point end_tile = Tile::TileForPoint(SDL2pp::Point(rect.GetX2(), rect.GetY2()));
+	SDL2pp::Point start_tile = Tile::CoordsForPoint(SDL2pp::Point(rect.x, rect.y));
+	SDL2pp::Point end_tile = Tile::CoordsForPoint(SDL2pp::Point(rect.GetX2(), rect.GetY2()));
 
 	// render all seen tiles
 	SDL2pp::Point tilecoord;
@@ -201,7 +176,7 @@ void TileCache::Render(const SDL2pp::Rect& rect) {
 		for (tilecoord.y = start_tile.y; tilecoord.y <= end_tile.y; tilecoord.y++) {
 			auto tileiter = tiles_.find(tilecoord);
 			if (tileiter != tiles_.end())
-				tileiter->second->Render(renderer_, rect);
+				tileiter->second.Render(renderer_, rect);
 		}
 	}
 }
@@ -210,10 +185,11 @@ void TileCache::UpdateCollisions(CollisionInfo& collisions, const SDL2pp::Rect& 
 	ProcessTilesInRect(rect.GetExtension(distance), [&](const SDL2pp::Point& tilecoord) {
 			auto tile = tiles_.find(tilecoord);
 			if (tile == tiles_.end()) // while we can skip not loaded tiles for rendering, we can't for physics
-				tile = CreateTile(tilecoord, LoadTileData(tilecoord)); // so load needed tile synchronously
-			tile->second->CheckLeftCollision(collisions, SDL2pp::Rect(rect.x - distance, rect.y, distance, rect.h));
-			tile->second->CheckRightCollision(collisions, SDL2pp::Rect(rect.x + rect.w, rect.y, distance, rect.h));
-			tile->second->CheckTopCollision(collisions, SDL2pp::Rect(rect.x, rect.y - distance, rect.w, distance));
-			tile->second->CheckBottomCollision(collisions, SDL2pp::Rect(rect.x, rect.y + rect.h, rect.w, distance));
+				tile = tiles_.emplace(tilecoord, Tile(tilecoord)).first; // so load needed tile synchronously
+
+			tile->second.CheckLeftCollision(collisions, SDL2pp::Rect(rect.x - distance, rect.y, distance, rect.h));
+			tile->second.CheckRightCollision(collisions, SDL2pp::Rect(rect.x + rect.w, rect.y, distance, rect.h));
+			tile->second.CheckTopCollision(collisions, SDL2pp::Rect(rect.x, rect.y - distance, rect.w, distance));
+			tile->second.CheckBottomCollision(collisions, SDL2pp::Rect(rect.x, rect.y + rect.h, rect.w, distance));
 		});
 }
