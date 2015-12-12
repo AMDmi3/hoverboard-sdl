@@ -152,7 +152,6 @@ public:
 	SDL2pp::Rect GetPlayerCollisionRect() const;
 	SDL2pp::Rect GetCoinRect(const SDL2pp::Point& coin) const;
 
-	void LoadVisibleTiles();
 	void Update(float delta_t);
 	void Render();//const SDL2pp::Rect& viewport);
 

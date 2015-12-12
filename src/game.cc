@@ -109,10 +109,6 @@ SDL2pp::Rect Game::GetCoinRect(const SDL2pp::Point& coin) const {
 		);
 }
 
-void Game::LoadVisibleTiles() {
-	tile_cache_.PreloadTilesSync(GetCameraRect());
-}
-
 void Game::Update(float delta_t) {
 	// All original game constants work at 60 fps fixed frame
 	// rate and do not take real frame time into account, so

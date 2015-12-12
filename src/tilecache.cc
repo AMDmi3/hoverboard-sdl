@@ -78,13 +78,6 @@ void TileCache::SetCacheSize(size_t cache_size) {
 	cache_size_ = cache_size;
 }
 
-void TileCache::PreloadTilesSync(const SDL2pp::Rect& rect) {
-	ProcessTilesInRect(rect, [this](const SDL2pp::Point tilecoord) {
-			if (tiles_.find(tilecoord) == tiles_.end())
-				tiles_.emplace(tilecoord, Tile(tilecoord));
-		});
-}
-
 void TileCache::UpdateCache(const SDL2pp::Rect& rect, int xprecache, int yprecache) {
 	// we only have one upgrade candidate per frame, as
 	// upgrading takes time and upgradeing multiple tiles
