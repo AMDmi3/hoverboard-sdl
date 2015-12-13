@@ -53,6 +53,7 @@ Game::Game(SDL2pp::Renderer& renderer)
 	  arrowkeys_message_(renderer_, font_18_.RenderText_Blended("use the arrow keys to move, esc/q to quit", SDL_Color{ 255, 255, 255, 192 })),
 	  playarea_message_(renderer_, font_40_.RenderText_Blended("RETURN TO THE PLAY AREA", SDL_Color{ 255, 0, 0, 255 } )),
 	  tile_cache_(renderer) {
+	minimap_texture_.SetAlphaMod(192);
 }
 
 Game::~Game() {
