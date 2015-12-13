@@ -34,6 +34,7 @@
 
 constexpr SDL2pp::Rect Game::deposit_area_rect_;
 constexpr SDL2pp::Rect Game::play_area_rect_;
+constexpr SDL2pp::Rect Game::map_tiles_rect_;
 constexpr float Game::player_max_speed_;
 constexpr int Game::portal_effect_duration_ms_;
 
@@ -114,6 +115,13 @@ SDL2pp::Rect Game::GetCoinRect(const SDL2pp::Point& coin) const {
 			(int)coin.y - coin_size_ + coin_size_ / 2,
 			coin_size_,
 			coin_size_
+		);
+}
+
+SDL2pp::Point Game::GetPosOnMap(float x, float y) const {
+	return SDL2pp::Point(
+			(x - Tile::RectForCoords(map_tiles_rect_.GetTopLeft()).x) / Tile::tile_size_ * map_tile_size_,
+			(y - Tile::RectForCoords(map_tiles_rect_.GetTopLeft()).y) / Tile::tile_size_ * map_tile_size_
 		);
 }
 
@@ -379,8 +387,42 @@ void Game::Render() {
 
 	// minimap
 	if (show_minimap_) {
-		minimap_texture_.SetAlphaMod(192);
-		renderer_.Copy(minimap_texture_, SDL2pp::NullOpt, SDL2pp::NullOpt);
+		SDL2pp::Point map_player_pos = GetPosOnMap(game_state_.player_x, game_state_.player_y);
+		SDL2pp::Point map_pos = map_player_pos;
+
+		SDL2pp::Point map_center_on_screen = GetCameraRect().GetSize() / SDL2pp::Point(2, 3);
+
+		for (int y = 0; y < map_tiles_rect_.h; y++) {
+			for (int x = 0; x < map_tiles_rect_.w; x++) {
+				if (game_state_.seen_tiles[x + y * map_tiles_rect_.w]) {
+					SDL2pp::Point target = map_center_on_screen - map_pos + SDL2pp::Point(x, y) * (map_tile_size_);
+
+					renderer_.Copy(
+							minimap_texture_,
+							SDL2pp::Rect(x * map_tile_size_, y * map_tile_size_, map_tile_size_, map_tile_size_),
+							target
+						);
+				}
+			}
+		}
+
+		// player icon
+		renderer_.Copy(
+				map_icons_texture_,
+				SDL2pp::Rect(map_icon_size_ * MapIcons::PLAYER, 0, map_icon_size_, map_icon_size_),
+				map_center_on_screen - SDL2pp::Point(map_icon_size_ / 2, map_icon_size_ / 2)
+			);
+
+		// coin icons
+		for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++) {
+			if (game_state_.seen_coins[ncoin]) {
+				renderer_.Copy(
+						map_icons_texture_,
+						SDL2pp::Rect(game_state_.picked_coins[ncoin] ? (map_icon_size_ * MapIcons::PICKED_COIN) : (map_icon_size_ * MapIcons::COIN), 0, map_icon_size_, map_icon_size_),
+						map_center_on_screen + GetPosOnMap(coin_locations_[ncoin].x, coin_locations_[ncoin].y) - map_player_pos - SDL2pp::Point(map_icon_size_ / 2, map_icon_size_ / 2)
+					);
+			}
+		}
 	}
 }
 

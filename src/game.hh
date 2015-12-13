@@ -97,6 +97,7 @@ private:
 	constexpr static int portal_effect_duration_ms_ = 500;
 	constexpr static int portal_effect_size_ = 10;
 
+	constexpr static int map_tile_size_ = 8;
 	constexpr static int map_icon_size_ = 5;
 
 	enum MapIcons {
@@ -105,6 +106,8 @@ private:
 		PICKED_COIN = 2,
 		PLAYER = 3,
 	};
+
+	constexpr static SDL2pp::Rect map_tiles_rect_ = SDL2pp::Rect::FromCorners(928, -1112, 1107, -1069);
 
 private:
 	SDL2pp::Renderer& renderer_;
@@ -202,6 +205,8 @@ private:
 	SDL2pp::Rect GetPlayerRect() const;
 	SDL2pp::Rect GetPlayerCollisionRect() const;
 	SDL2pp::Rect GetCoinRect(const SDL2pp::Point& coin) const;
+
+	SDL2pp::Point GetPosOnMap(float x, float y) const;
 
 	void DepositCoins();
 

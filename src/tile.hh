@@ -30,7 +30,7 @@
 class CollisionInfo;
 
 class Tile {
-private:
+public:
 	static constexpr int tile_size_ = 512;
 
 private:
