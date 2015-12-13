@@ -407,13 +407,6 @@ void Game::Render() {
 			}
 		}
 
-		// player icon
-		renderer_.Copy(
-				map_icons_texture_,
-				SDL2pp::Rect(map_icon_size_ * MapIcons::PLAYER, 0, map_icon_size_, map_icon_size_),
-				map_center_on_screen - SDL2pp::Point(map_icon_size_ / 2, map_icon_size_ / 2)
-			);
-
 		// coin icons
 		for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++) {
 			if (game_state_.seen_coins[ncoin]) {
@@ -424,6 +417,13 @@ void Game::Render() {
 					);
 			}
 		}
+
+		// player icon
+		renderer_.Copy(
+				map_icons_texture_,
+				SDL2pp::Rect(map_icon_size_ * MapIcons::PLAYER, 0, map_icon_size_, map_icon_size_),
+				map_center_on_screen - SDL2pp::Point(map_icon_size_ / 2, map_icon_size_ / 2)
+			);
 	}
 }
 
