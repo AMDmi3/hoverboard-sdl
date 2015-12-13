@@ -39,6 +39,7 @@ Extra features compared to original:
   continue your journey from the same point
 * **Saved locations** - you may save up to 10 locations and return
   to them with a single key press
+* **Map** - shows explored parts of the world and known coin locations
 
 ## Controls
 
@@ -46,6 +47,7 @@ Extra features compared to original:
 * **Esc** or **Q** - leave the game
 * **Ctrl+0**, **Ctrl+1** ... **Ctrl+9** - save player location
 * **0**, **1** ... **9** - jump to corresponding saved location
+* **Tab** - toggle map
 
 ## Building
 
