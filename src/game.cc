@@ -395,6 +395,7 @@ void Game::Render() {
 
 		for (int y = 0; y < map_tiles_rect_.h; y++) {
 			for (int x = 0; x < map_tiles_rect_.w; x++) {
+				// XXX: instead of rendering individual map squares we may render contiguous strips here
 				if (game_state_.seen_tiles[x + y * map_tiles_rect_.w]) {
 					SDL2pp::Point target = map_center_on_screen - map_pos + SDL2pp::Point(x, y) * (map_tile_size_);
 
