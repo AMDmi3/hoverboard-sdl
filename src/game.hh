@@ -102,7 +102,7 @@ private:
 
 	enum MapIcons {
 		COIN = 0,
-		TELEPORT = 1,
+		LOCATION = 1,
 		PICKED_COIN = 2,
 		PLAYER = 3,
 	};
@@ -119,6 +119,7 @@ private:
 	SDL2pp::Texture player_texture_y_;
 	SDL2pp::Texture minimap_texture_;
 	SDL2pp::Texture map_icons_texture_;
+	SDL2pp::Font font_10_;
 	SDL2pp::Font font_18_;
 	SDL2pp::Font font_20_;
 	SDL2pp::Font font_34_;
@@ -126,6 +127,7 @@ private:
 
 	SDL2pp::Texture arrowkeys_message_;
 	SDL2pp::Texture playarea_message_;
+	std::array<SDL2pp::Texture, num_saved_locations_> map_numbers_;
 
 	std::unique_ptr<SDL2pp::Texture> deposit_big_message_;
 	std::unique_ptr<SDL2pp::Texture> deposit_small_message_;

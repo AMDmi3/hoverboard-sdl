@@ -46,12 +46,25 @@ Game::Game(SDL2pp::Renderer& renderer)
 	  player_texture_y_(renderer_, DATADIR "/all-four-y.png"),
 	  minimap_texture_(renderer_, DATADIR "/minimap.png"),
 	  map_icons_texture_(renderer_, DATADIR "/map_icons.png"),
+	  font_10_(DATADIR "/xkcd-Regular.otf", 10),
 	  font_18_(DATADIR "/xkcd-Regular.otf", 18),
 	  font_20_(DATADIR "/xkcd-Regular.otf", 20),
 	  font_34_(DATADIR "/xkcd-Regular.otf", 34),
 	  font_40_(DATADIR "/xkcd-Regular.otf", 40),
 	  arrowkeys_message_(renderer_, font_18_.RenderText_Blended("use the arrow keys to move, esc/q to quit", SDL_Color{ 255, 255, 255, 192 })),
 	  playarea_message_(renderer_, font_40_.RenderText_Blended("RETURN TO THE PLAY AREA", SDL_Color{ 255, 0, 0, 255 } )),
+	  map_numbers_{{
+		  SDL2pp::Texture(renderer_, font_10_.RenderText_Blended("0", SDL_Color{ 0, 87, 120, 192 })),
+		  SDL2pp::Texture(renderer_, font_10_.RenderText_Blended("1", SDL_Color{ 0, 87, 120, 192 })),
+		  SDL2pp::Texture(renderer_, font_10_.RenderText_Blended("2", SDL_Color{ 0, 87, 120, 192 })),
+		  SDL2pp::Texture(renderer_, font_10_.RenderText_Blended("3", SDL_Color{ 0, 87, 120, 192 })),
+		  SDL2pp::Texture(renderer_, font_10_.RenderText_Blended("4", SDL_Color{ 0, 87, 120, 192 })),
+		  SDL2pp::Texture(renderer_, font_10_.RenderText_Blended("5", SDL_Color{ 0, 87, 120, 192 })),
+		  SDL2pp::Texture(renderer_, font_10_.RenderText_Blended("6", SDL_Color{ 0, 87, 120, 192 })),
+		  SDL2pp::Texture(renderer_, font_10_.RenderText_Blended("7", SDL_Color{ 0, 87, 120, 192 })),
+		  SDL2pp::Texture(renderer_, font_10_.RenderText_Blended("8", SDL_Color{ 0, 87, 120, 192 })),
+		  SDL2pp::Texture(renderer_, font_10_.RenderText_Blended("9", SDL_Color{ 0, 87, 120, 192 }))
+	  }},
 	  tile_cache_(renderer) {
 	minimap_texture_.SetAlphaMod(192);
 }
@@ -415,6 +428,18 @@ void Game::Render() {
 						map_icons_texture_,
 						SDL2pp::Rect(game_state_.picked_coins[ncoin] ? (map_icon_size_ * MapIcons::PICKED_COIN) : (map_icon_size_ * MapIcons::COIN), 0, map_icon_size_, map_icon_size_),
 						map_center_on_screen + GetPosOnMap(coin_locations_[ncoin].x, coin_locations_[ncoin].y) - map_player_pos - SDL2pp::Point(map_icon_size_ / 2, map_icon_size_ / 2)
+					);
+			}
+		}
+
+		// saved locations
+		for (int nloc = 0; nloc < num_saved_locations_; nloc++) {
+			auto& loc = game_state_.saved_locations[nloc];
+			if (loc) {
+				renderer_.Copy(
+						map_numbers_[nloc],
+						SDL2pp::NullOpt,
+						map_center_on_screen + GetPosOnMap(loc->first, loc->second) - map_player_pos - SDL2pp::Point(map_numbers_[nloc].GetWidth() / 2, map_numbers_[nloc].GetHeight() / 2)
 					);
 			}
 		}
