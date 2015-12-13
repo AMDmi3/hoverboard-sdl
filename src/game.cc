@@ -261,6 +261,15 @@ void Game::Update(float delta_t) {
 	// Update tile cache
 	tile_cache_.UpdateCache(GetCameraRect(), 512, 512);
 
+	// Update seen things
+	tile_cache_.ProcessTilesInRect(GetCameraRect(), [this](const SDL2pp::Point& tilecoord) {
+			if (map_tiles_rect_.Contains(tilecoord))
+				game_state_.seen_tiles[tilecoord.x - map_tiles_rect_.x + (tilecoord.y - map_tiles_rect_.y) * map_tiles_rect_.w] = true;
+		});
+	for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++)
+		if (GetCameraRect().Intersects(GetCoinRect(coin_locations_[ncoin])))
+			game_state_.seen_coins[ncoin] = true;
+
 	prev_action_flags_ = action_flags_;
 }
 
@@ -463,7 +472,7 @@ void Game::SaveState() const {
 	}
 
 	// savefile format version
-	statefile << (int)0 << std::endl;
+	statefile << (int)1 << std::endl;
 
 	// playtime
 	statefile << std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - game_state_.session_start).count() << std::endl;
@@ -477,7 +486,7 @@ void Game::SaveState() const {
 
 	statefile << game_state_.player_x << " " << game_state_.player_y << std::endl;
 
-	// coins
+	// picked coins
 	for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++)
 		statefile << (ncoin ? " " : "") << game_state_.picked_coins[ncoin];
 	statefile << std::endl;
@@ -489,6 +498,16 @@ void Game::SaveState() const {
 		else
 			statefile << false << std::endl;
 	}
+
+	// seen coins
+	for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++)
+		statefile << (ncoin ? " " : "") << game_state_.seen_coins[ncoin];
+	statefile << std::endl;
+
+	// seen tiles
+	for (size_t ntile = 0; ntile < game_state_.seen_tiles.size(); ntile++)
+		statefile << (ntile ? " " : "") << game_state_.seen_tiles[ntile];
+	statefile << std::endl;
 }
 
 void Game::LoadState() {
@@ -502,9 +521,14 @@ void Game::LoadState() {
 	int version;
 	statefile >> version;
 
+	if (!(version >= 0 && version <= 1)) {
+		std::cerr << "Warning: could not read game state from " << path << ", incompatible version " << version << std::endl;
+		return;
+	}
+
 	GameState new_state;
 
-	if (version == 0) {
+	if (version >= 0) {
 		// playtime
 		long playtime;
 		statefile >> playtime;
@@ -527,13 +551,14 @@ void Game::LoadState() {
 		statefile >> new_state.player_x;
 		statefile >> new_state.player_y;
 
-		// coins
+		// picked coins
 		for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++) {
 			bool tmp;
 			statefile >> tmp;
 			new_state.picked_coins[ncoin] = tmp;
 		}
 
+		// saved locations
 		for (int nloc = 0; nloc < num_saved_locations_; nloc++) {
 			bool active;
 			float x, y;
@@ -544,9 +569,21 @@ void Game::LoadState() {
 				new_state.saved_locations[nloc] = std::make_pair(x, y);
 			}
 		}
-	} else {
-		std::cerr << "Warning: could not read game state from " << path << ", incompatible version " << version << std::endl;
-		return;
+	}
+	if (version >= 1) {
+		// seen coins
+		for (size_t ncoin = 0; ncoin < coin_locations_.size(); ncoin++) {
+			bool tmp;
+			statefile >> tmp;
+			new_state.seen_coins[ncoin] = tmp;
+		}
+
+		// seen tiles
+		for (size_t ntile = 0; ntile < new_state.seen_tiles.size(); ntile++) {
+			bool tmp;
+			statefile >> tmp;
+			new_state.seen_tiles[ntile] = tmp;
+		}
 	}
 
 	// new state overrides

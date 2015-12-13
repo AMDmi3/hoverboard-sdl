@@ -173,9 +173,13 @@ private:
 
 		// Coins
 		std::vector<bool> picked_coins = std::vector<bool>(coin_locations_.size(), false);
+		std::vector<bool> seen_coins = std::vector<bool>(coin_locations_.size(), false);
 
 		// Teleport locations
 		std::array<SDL2pp::Optional<std::pair<float, float>>, num_saved_locations_> saved_locations;
+
+		// Visited tiles
+		std::vector<bool> seen_tiles = std::vector<bool>(map_tiles_rect_.w * map_tiles_rect_.h, false);
 	};
 
 	GameState game_state_;
