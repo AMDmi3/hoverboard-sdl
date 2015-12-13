@@ -56,18 +56,6 @@ private:
 
 	bool finish_thread_;
 
-private:
-	template<class T>
-	void ProcessTilesInRect(const SDL2pp::Rect& rect, T processor) {
-		SDL2pp::Point start_tile = Tile::CoordsForPoint(SDL2pp::Point(rect.x, rect.y));
-		SDL2pp::Point end_tile = Tile::CoordsForPoint(SDL2pp::Point(rect.GetX2(), rect.GetY2()));
-
-		SDL2pp::Point tilecoord;
-		for (tilecoord.x = start_tile.x; tilecoord.x <= end_tile.x; tilecoord.x++)
-			for (tilecoord.y = start_tile.y; tilecoord.y <= end_tile.y; tilecoord.y++)
-				processor(tilecoord);
-	}
-
 public:
 	TileCache(SDL2pp::Renderer& renderer);
 	~TileCache();
@@ -78,6 +66,17 @@ public:
 	void Render(const SDL2pp::Rect& rect);
 
 	void UpdateCollisions(CollisionInfo& collisions, const SDL2pp::Rect& rect, int distance);
+
+	template<class T>
+	void ProcessTilesInRect(const SDL2pp::Rect& rect, T processor) {
+		SDL2pp::Point start_tile = Tile::CoordsForPoint(SDL2pp::Point(rect.x, rect.y));
+		SDL2pp::Point end_tile = Tile::CoordsForPoint(SDL2pp::Point(rect.GetX2(), rect.GetY2()));
+
+		SDL2pp::Point tilecoord;
+		for (tilecoord.x = start_tile.x; tilecoord.x <= end_tile.x; tilecoord.x++)
+			for (tilecoord.y = start_tile.y; tilecoord.y <= end_tile.y; tilecoord.y++)
+				processor(tilecoord);
+	}
 };
 
 #endif // TILECACHE_HH
