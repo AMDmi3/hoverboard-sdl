@@ -44,6 +44,7 @@ Game::Game(SDL2pp::Renderer& renderer)
 	  player_texture_b_(renderer_, DATADIR "/all-four-b.png"),
 	  player_texture_y_(renderer_, DATADIR "/all-four-y.png"),
 	  minimap_texture_(renderer_, DATADIR "/minimap.png"),
+	  map_icons_texture_(renderer_, DATADIR "/map_icons.png"),
 	  font_18_(DATADIR "/xkcd-Regular.otf", 18),
 	  font_20_(DATADIR "/xkcd-Regular.otf", 20),
 	  font_34_(DATADIR "/xkcd-Regular.otf", 34),

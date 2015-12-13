@@ -97,6 +97,15 @@ private:
 	constexpr static int portal_effect_duration_ms_ = 500;
 	constexpr static int portal_effect_size_ = 10;
 
+	constexpr static int map_icon_size_ = 5;
+
+	enum MapIcons {
+		COIN = 0,
+		TELEPORT = 1,
+		PICKED_COIN = 2,
+		PLAYER = 3,
+	};
+
 private:
 	SDL2pp::Renderer& renderer_;
 
@@ -106,6 +115,7 @@ private:
 	SDL2pp::Texture player_texture_b_;
 	SDL2pp::Texture player_texture_y_;
 	SDL2pp::Texture minimap_texture_;
+	SDL2pp::Texture map_icons_texture_;
 	SDL2pp::Font font_18_;
 	SDL2pp::Font font_20_;
 	SDL2pp::Font font_34_;
