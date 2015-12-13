@@ -140,6 +140,10 @@ SDL2pp::Point Game::GetPosOnMap(float x, float y) const {
 }
 
 void Game::Update(float delta_t) {
+	// don't allow too long frames which may leave player in the obstacle
+	// XXX: this shouldn't happen regardless of frame time
+	delta_t = std::min(delta_t, 1.0f / 60.0f);
+
 	auto now = std::chrono::steady_clock::now();
 
 	// All original game constants work at 60 fps fixed frame
