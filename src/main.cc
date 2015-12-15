@@ -45,7 +45,7 @@ static const std::map<SDL_Keycode, int> teleport_slots = {
 	{ SDLK_9, 9 },
 };
 
-int main(int /*argc*/, char** /*argv*/) try {
+int main(int, char*[]) try {
 	// SDL stuff
 	SDL2pp::SDL sdl(SDL_INIT_VIDEO);
 	SDL2pp::SDLTTF sdlttf;
