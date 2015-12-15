@@ -534,7 +534,11 @@ void Game::SaveState() const {
 
 	while ((slashpos = path.find('/', slashpos)) != std::string::npos) {
 		if (slashpos != 0)
-			mkdir(path.substr(0, slashpos).c_str(), 0777);
+			mkdir(path.substr(0, slashpos).c_str()
+#ifndef _WIN32
+					, 0777
+#endif
+					);
 		slashpos++;
 	}
 
