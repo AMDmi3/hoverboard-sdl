@@ -1,0 +1,93 @@
+version: '{branch}.{build}'
+os: Visual Studio 2015
+clone_depth: 1
+cache:
+  - c:\freshmingw
+  - c:\usr
+before_build:
+  - |-
+    set PREFIX=C:\usr
+    set MINGW32=C:\freshmingw
+    set ARCH=i686-w64-mingw32
+    set PACKAGE=hoverboard-%APPVEYOR_BUILD_VERSION%
+    set STAGE=C:\%PACKAGE%
+
+  - git submodule update --init --recursive
+
+  # depends are only fetched where there's no cache
+  - if exist %PREFIX% set DEPENDS=rem
+
+  - |-
+     %DEPENDS% mkdir %PREFIX%\include\SDL2
+     %DEPENDS% mkdir %PREFIX%\lib
+     %DEPENDS% cd %TEMP%
+
+  # SDL2
+  - |-
+    %DEPENDS% appveyor DownloadFile http://www.libsdl.org/release/SDL2-devel-2.0.3-mingw.tar.gz
+    %DEPENDS% 7z x SDL2-devel-2.0.3-mingw.tar.gz > nul
+    %DEPENDS% 7z x SDL2-devel-2.0.3-mingw.tar > nul
+    %DEPENDS% copy SDL2-2.0.3\%ARCH%\include\SDL2\* %PREFIX%\include\SDL2 > nul
+    %DEPENDS% copy SDL2-2.0.3\%ARCH%\lib\*.a %PREFIX%\lib > nul
+    %DEPENDS% copy SDL2-2.0.3\%ARCH%\bin\*.dll %PREFIX%\lib > nul
+
+  # SDL2_image
+  - |-
+    %DEPENDS% appveyor DownloadFile http://www.libsdl.org/projects/SDL_image/release/SDL2_image-devel-2.0.0-mingw.tar.gz
+    %DEPENDS% 7z x SDL2_image-devel-2.0.0-mingw.tar.gz > nul
+    %DEPENDS% 7z x SDL2_image-devel-2.0.0-mingw.tar > nul
+    %DEPENDS% copy SDL2_image-2.0.0\%ARCH%\include\SDL2\* %PREFIX%\include\SDL2 > nul
+    %DEPENDS% copy SDL2_image-2.0.0\%ARCH%\lib\*.a %PREFIX%\lib > nul
+    %DEPENDS% copy SDL2_image-2.0.0\%ARCH%\bin\*.dll %PREFIX%\lib > nul
+
+  # SDL2_ttf
+  - |-
+    %DEPENDS% appveyor DownloadFile https://www.libsdl.org/projects/SDL_ttf/release/SDL2_ttf-devel-2.0.12-mingw.tar.gz
+    %DEPENDS% 7z x SDL2_ttf-devel-2.0.12-mingw.tar.gz > nul
+    %DEPENDS% 7z x SDL2_ttf-devel-2.0.12-mingw.tar > nul
+    %DEPENDS% copy SDL2_ttf-2.0.12\%ARCH%\include\SDL2\* %PREFIX%\include\SDL2 > nul
+    %DEPENDS% copy SDL2_ttf-2.0.12\%ARCH%\lib\*.a %PREFIX%\lib > nul
+    %DEPENDS% copy SDL2_ttf-2.0.12\%ARCH%\bin\*.dll %PREFIX%\lib > nul
+
+  # Fixup SDL bug
+  - |-
+    %DEPENDS% appveyor DownloadFile https://hg.libsdl.org/SDL/raw-file/e217ed463f25/include/SDL_platform.h
+    %DEPENDS% copy SDL_platform.h %PREFIX%\include\SDL2
+
+  # Newer mingw is required, as older mingw32 does not support std::thread
+  - |-
+    %DEPENDS% appveyor DownloadFile http://sourceforge.net/projects/mingw-w64/files/Toolchains targetting Win32/Personal Builds/mingw-builds/4.9.3/threads-posix/dwarf/i686-4.9.3-release-posix-dwarf-rt_v4-rev1.7z/download
+    %DEPENDS%  7z x download -o%MINGW32% > nul
+
+build_script:
+  - |-
+    set Path=%MINGW32%\mingw32\bin;%Path%
+    cd %APPVEYOR_BUILD_FOLDER%
+    del "C:\Program Files\Git\usr\bin\sh.exe"
+
+  # Build
+  - |-
+    cmake --version
+    cmake -DCMAKE_PREFIX_PATH="%PREFIX%" -DCMAKE_C_COMPILER=%ARCH%-gcc.exe -DCMAKE_CXX_COMPILER=%ARCH%-c++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_WIN32_EXECUTABLE=ON -DCMAKE_EXE_LINKER_FLAGS="-lmingw32" -DSTANDALONE=ON -DCMAKE_INSTALL_PREFIX="%STAGE%" -G "MinGW Makefiles"
+
+  - |-
+    mingw32-make
+    mingw32-make install >nul
+
+  # Add needed libs
+  - |-
+    copy %MINGW32%\mingw32\bin\libgcc_s_dw2-1.dll %STAGE%
+    copy %MINGW32%\mingw32\bin\libwinpthread-1.dll %STAGE%
+    copy %MINGW32%\mingw32\bin\libstdc*.dll %STAGE%
+    copy %PREFIX%\lib\SDL2.dll %STAGE%
+    copy %PREFIX%\lib\SDL2_image.dll %STAGE%
+    copy %PREFIX%\lib\SDL2_ttf.dll %STAGE%
+    copy %PREFIX%\lib\libfreetype-6.dll %STAGE%
+    copy %PREFIX%\lib\zlib1.dll %STAGE%
+    copy %PREFIX%\lib\libpng16-16.dll %STAGE%
+
+  # Create package
+  - |-
+    cd C:\
+    7z a %PACKAGE%.zip %PACKAGE% >nul
+    appveyor PushArtifact %PACKAGE%.zip
