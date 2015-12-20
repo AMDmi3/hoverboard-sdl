@@ -116,6 +116,14 @@ int main(int, char*[]) try {
 					game.ClearActionFlag(Game::DOWN);
 					break;
 				}
+			} else if (event.type == SDL_WINDOWEVENT) {
+				switch (event.window.event) {
+				case SDL_WINDOWEVENT_SIZE_CHANGED:
+					renderer.SetDrawColor(255, 255, 255);
+					renderer.Clear();
+					renderer.Present();
+					break;
+				}
 			}
 		}
 
