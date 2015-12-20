@@ -213,13 +213,16 @@ private:
 	void DepositCoins();
 
 public:
+	typedef TileCache::LoadingProgressCallback LoadingProgressCallback;
+
+public:
 	Game(SDL2pp::Renderer& renderer);
 	~Game();
 
 	void SetActionFlag(int flag);
 	void ClearActionFlag(int flag);
 
-	void Update(float delta_t);
+	void Update(float delta_t, LoadingProgressCallback loadingcb = LoadingProgressCallback());
 	void Render();
 
 	void RenderProgressbar(int ndone, int ntotal);

@@ -139,7 +139,7 @@ SDL2pp::Point Game::GetPosOnMap(float x, float y) const {
 		);
 }
 
-void Game::Update(float delta_t) {
+void Game::Update(float delta_t, LoadingProgressCallback loadingcb) {
 	// don't allow too long frames which may leave player in the obstacle
 	// XXX: this shouldn't happen regardless of frame time
 	delta_t = std::min(delta_t, 1.0f / 60.0f);
@@ -286,7 +286,7 @@ void Game::Update(float delta_t) {
 		});
 
 	// Update tile cache
-	tile_cache_.UpdateCache(GetCameraRect(), 512, 512);
+	tile_cache_.UpdateCache(GetCameraRect(), 512, 512, loadingcb);
 
 	// Update seen things
 	tile_cache_.ProcessTilesInRect(GetCameraRect(), [this](const SDL2pp::Point& tilecoord) {
