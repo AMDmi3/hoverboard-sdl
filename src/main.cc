@@ -119,7 +119,14 @@ int main(int, char*[]) try {
 			}
 		}
 
-		game.Update((float)frame_delta / 1000.0f);
+		game.Update((float)frame_delta / 1000.0f, [&](int nloaded, int nmissing) {
+				renderer.SetDrawColor(255, 255, 255);
+				renderer.Clear();
+
+				game.RenderProgressbar(nloaded, nmissing);
+
+				renderer.Present();
+			});
 
 		// Render
 		renderer.SetDrawColor(255, 255, 255);
