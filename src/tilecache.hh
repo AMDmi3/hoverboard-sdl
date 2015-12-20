@@ -26,6 +26,7 @@
 #include <mutex>
 #include <list>
 #include <thread>
+#include <functional>
 
 #include <SDL2pp/Renderer.hh>
 
@@ -57,12 +58,15 @@ private:
 	bool finish_thread_;
 
 public:
+	typedef std::function<void(int, int)> LoadingProgressCallback;
+
+public:
 	TileCache(SDL2pp::Renderer& renderer);
 	~TileCache();
 
 	void SetCacheSize(size_t cache_size);
 
-	void UpdateCache(const SDL2pp::Rect& rect, int xprecache, int yprecache);
+	void UpdateCache(const SDL2pp::Rect& rect, int xprecache, int yprecache, LoadingProgressCallback loadingcb = LoadingProgressCallback());
 	void Render(const SDL2pp::Rect& rect);
 
 	void UpdateCollisions(CollisionInfo& collisions, const SDL2pp::Rect& rect, int distance);

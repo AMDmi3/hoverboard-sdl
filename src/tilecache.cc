@@ -78,7 +78,7 @@ void TileCache::SetCacheSize(size_t cache_size) {
 	cache_size_ = cache_size;
 }
 
-void TileCache::UpdateCache(const SDL2pp::Rect& rect, int xprecache, int yprecache) {
+void TileCache::UpdateCache(const SDL2pp::Rect& rect, int xprecache, int yprecache, LoadingProgressCallback loadingcb) {
 	// we only have one upgrade candidate per frame, as
 	// upgrading takes time and upgradeing multiple tiles
 	// may cause lags
@@ -87,6 +87,18 @@ void TileCache::UpdateCache(const SDL2pp::Rect& rect, int xprecache, int yprecac
 
 	{
 		std::unique_lock<std::mutex> lock(loader_queue_mutex_);
+
+		// Calculate number of missing tiles for progress
+		int nmissing = 0;
+		int nloaded = 0;
+		ProcessTilesInRect(rect, [this, &nmissing](const SDL2pp::Point& tilecoord) {
+				auto tile_iter = tiles_.find(tilecoord);
+				if (tile_iter == tiles_.end())
+					nmissing++;
+			});
+
+		if (nmissing != 0)
+			loadingcb(0, nmissing);
 
 		// clear queue, we'll for new one
 		loader_queue_.clear();
@@ -109,13 +121,17 @@ void TileCache::UpdateCache(const SDL2pp::Rect& rect, int xprecache, int yprecac
 			loader_queue_condvar_.wait(lock, [&](){ return !currently_loading_; } );
 
 		// next, forcibly load and upgrade all visible tiles
-		ProcessTilesInRect(rect, [this, &seen_tiles](const SDL2pp::Point& tilecoord) {
+		ProcessTilesInRect(rect, [this, &seen_tiles, &loadingcb, &nloaded, &nmissing](const SDL2pp::Point& tilecoord) {
 				auto tile_iter = tiles_.find(tilecoord);
-				if (tile_iter == tiles_.end())
+				if (tile_iter == tiles_.end()) {
 					tile_iter = tiles_.emplace(tilecoord, Tile(tilecoord)).first;
+					nloaded++; // newly loaded tiles are counted here as well
+					loadingcb(std::min(nmissing, nloaded), nmissing);
+				}
 
 				if (tile_iter->second.NeedsUpgrade())
 					tile_iter->second.Upgrade(renderer_);
+
 				seen_tiles.insert(tile_iter->first);
 			});
 
