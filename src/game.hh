@@ -222,6 +222,8 @@ public:
 	void Update(float delta_t);
 	void Render();
 
+	void RenderProgressbar(int ndone, int ntotal);
+
 	void LoadState();
 	void SaveState() const;
 

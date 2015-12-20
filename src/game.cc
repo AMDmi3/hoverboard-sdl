@@ -457,6 +457,27 @@ void Game::Render() {
 	}
 }
 
+void Game::RenderProgressbar(int ndone, int ntotal) {
+	if (ntotal <= 0)
+		return;
+
+	constexpr int bar_height = 40;
+
+	SDL2pp::Rect pbrect = SDL2pp::Rect::FromCenter(renderer_.GetOutputSize() / 2, SDL2pp::Point(renderer_.GetOutputWidth() / 2, bar_height));
+
+	renderer_.SetDrawColor(0, 0, 0);
+	renderer_.FillRect(pbrect);
+
+	pbrect.Extend(-2);
+	pbrect.w = pbrect.w * ndone / ntotal;
+
+	renderer_.SetDrawColor(255, 255, 255);
+	renderer_.FillRect(pbrect);
+
+	SDL2pp::Texture text(renderer_, font_34_.RenderText_Blended("Loading...", SDL_Color{ 0x0, 0x0, 0x0, 0xff }));
+	renderer_.Copy(text, SDL2pp::NullOpt, SDL2pp::Point(renderer_.GetOutputWidth() / 2 - text.GetWidth() / 2, renderer_.GetOutputHeight() / 2 - bar_height / 2 - text.GetHeight()));
+}
+
 void Game::DepositCoins() {
 	size_t numcoins = std::count(game_state_.picked_coins.begin(), game_state_.picked_coins.end(), true);
 	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - game_state_.session_start).count();
