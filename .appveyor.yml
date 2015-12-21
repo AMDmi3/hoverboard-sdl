@@ -9,8 +9,6 @@ before_build:
     set PREFIX=C:\usr
     set MINGW32=C:\freshmingw
     set ARCH=i686-w64-mingw32
-    set PACKAGE=hoverboard-%APPVEYOR_BUILD_VERSION%
-    set STAGE=C:\%PACKAGE%
 
   - git submodule update --init --recursive
 
@@ -68,7 +66,7 @@ build_script:
   # Build
   - |-
     cmake --version
-    cmake -DCMAKE_PREFIX_PATH="%PREFIX%" -DCMAKE_C_COMPILER=%ARCH%-gcc.exe -DCMAKE_CXX_COMPILER=%ARCH%-c++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_WIN32_EXECUTABLE=ON -DCMAKE_EXE_LINKER_FLAGS="-lmingw32" -DSTANDALONE=ON -DCMAKE_INSTALL_PREFIX="%STAGE%" -G "MinGW Makefiles"
+    cmake -DCMAKE_PREFIX_PATH="%PREFIX%" -DCMAKE_C_COMPILER=%ARCH%-gcc.exe -DCMAKE_CXX_COMPILER=%ARCH%-c++.exe -DCMAKE_MAKE_PROGRAM=mingw32-make.exe -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_WIN32_EXECUTABLE=ON -DCMAKE_EXE_LINKER_FLAGS="-lmingw32" -DSTANDALONE=ON -DCMAKE_INSTALL_PREFIX="C:\hoverboard" -G "MinGW Makefiles"
 
   - |-
     mingw32-make
@@ -76,18 +74,35 @@ build_script:
 
   # Add needed libs
   - |-
-    copy %MINGW32%\mingw32\bin\libgcc_s_dw2-1.dll %STAGE%
-    copy %MINGW32%\mingw32\bin\libwinpthread-1.dll %STAGE%
-    copy %MINGW32%\mingw32\bin\libstdc*.dll %STAGE%
-    copy %PREFIX%\lib\SDL2.dll %STAGE%
-    copy %PREFIX%\lib\SDL2_image.dll %STAGE%
-    copy %PREFIX%\lib\SDL2_ttf.dll %STAGE%
-    copy %PREFIX%\lib\libfreetype-6.dll %STAGE%
-    copy %PREFIX%\lib\zlib1.dll %STAGE%
-    copy %PREFIX%\lib\libpng16-16.dll %STAGE%
+    copy %MINGW32%\mingw32\bin\libgcc_s_dw2-1.dll C:\hoverboard
+    copy %MINGW32%\mingw32\bin\libwinpthread-1.dll C:\hoverboard
+    copy %MINGW32%\mingw32\bin\libstdc*.dll C:\hoverboard
+    copy %PREFIX%\lib\SDL2.dll C:\hoverboard
+    copy %PREFIX%\lib\SDL2_image.dll C:\hoverboard
+    copy %PREFIX%\lib\SDL2_ttf.dll C:\hoverboard
+    copy %PREFIX%\lib\libfreetype-6.dll C:\hoverboard
+    copy %PREFIX%\lib\zlib1.dll C:\hoverboard
+    copy %PREFIX%\lib\libpng16-16.dll C:\hoverboard
 
   # Create package
+  - if "%APPVEYOR_REPO_TAG%"=="true" set PACKAGE=hoverboard-%APPVEYOR_REPO_TAG_NAME%-win32.zip
+  - if "%APPVEYOR_REPO_TAG%"=="false" set PACKAGE=hoverboard-%APPVEYOR_BUILD_VERSION%.zip
+
   - |-
     cd C:\
-    7z a %PACKAGE%.zip %PACKAGE% >nul
-    appveyor PushArtifact %PACKAGE%.zip
+    7z a %PACKAGE% hoverboard >nul
+    appveyor PushArtifact %PACKAGE%
+
+deploy:
+- provider: GitHub
+  tag: $(APPVEYOR_REPO_TAG_NAME)
+  release: $(APPVEYOR_REPO_TAG_NAME)
+  description: (FILL ME)
+  auth_token:
+    secure: Y1kamw3GXbTN3wqzi2gC18Wu/+gw4YONH71Ct1rR9AsOERS97SJeWs5/NcIMXN/x
+  artifact: /.*\.zip/
+  draft: true
+  prerelease: false
+  on:
+    branch: master
+    appveyor_repo_tag: on
