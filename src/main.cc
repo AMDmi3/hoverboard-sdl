@@ -52,6 +52,9 @@ int main(int, char*[]) try {
 	SDL2pp::Window window("Hoverboard", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 740, 700, SDL_WINDOW_RESIZABLE);
 	SDL2pp::Renderer renderer(window, -1, SDL_RENDERER_ACCELERATED);
 
+	SDL2pp::Surface icon(DATADIR "/xkcd.ico");
+	window.SetIcon(icon);
+
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
 	Game game(renderer);

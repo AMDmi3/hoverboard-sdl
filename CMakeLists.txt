@@ -11,13 +11,11 @@ IF(SYSTEMWIDE)
 	SET(BINDIR "${CMAKE_INSTALL_PREFIX}/bin" CACHE STRING "Where to install binaries")
 	SET(DATAROOTDIR "${CMAKE_INSTALL_PREFIX}/share" CACHE STRING "Root directory for data files")
 	SET(DATADIR "${DATAROOTDIR}/hoverboard" CACHE STRING "Where to install data files")
-	SET(ICONDIR "${DATAROOTDIR}/pixmaps" CACHE STRING "Where to install icon")
 	SET(DESKTOPDIR "${DATAROOTDIR}/applications" CACHE STRING "Where to install .desktop file")
 ELSEIF(STANDALONE)
 	SET(BINDIR "." CACHE STRING "Where to install binaries")
 	SET(DATAROOTDIR "." CACHE STRING "Root directory for data files")
 	SET(DATADIR "data" CACHE STRING "Where to install data files")
-	SET(ICONDIR "." CACHE STRING "Where to install icon")
 	SET(DESKTOPDIR "." CACHE STRING "Where to install .desktop file")
 ENDIF(SYSTEMWIDE)
 
@@ -77,12 +75,11 @@ TARGET_LINK_LIBRARIES(hoverboard ${SDL2PP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 # installation
 IF(SYSTEMWIDE OR STANDALONE)
-	CONFIGURE_FILE(misc/hoverboard.desktop.in misc/hoverboard.desktop)
-
 	INSTALL(TARGETS hoverboard RUNTIME DESTINATION ${BINDIR})
 	INSTALL(DIRECTORY data/ DESTINATION ${DATADIR})
+
 	IF(NOT WIN32)
-		INSTALL(FILES misc/xkcd.ico DESTINATION ${ICONDIR} RENAME hoverboard.ico)
+		CONFIGURE_FILE(misc/hoverboard.desktop.in misc/hoverboard.desktop)
 		INSTALL(FILES ${PROJECT_BINARY_DIR}/misc/hoverboard.desktop DESTINATION ${DESKTOPDIR})
 	ENDIF(NOT WIN32)
 ENDIF(SYSTEMWIDE OR STANDALONE)

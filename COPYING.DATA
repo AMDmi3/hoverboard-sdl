@@ -1,7 +1,7 @@
 datasrc/* and data/map_icons.png are (C) Dmitry Marakasov and are
 licensed under Creative Commons Attribution 4.0 license.
 
-All other files in data/ directory as well as icon from misc/ were
-either obtained from https://xkcd.com/1608/ or derived from data
-obtained from there, are (C) Randall Munroe and are licensed under
-a Creative Commons Attribution-NonCommercial 2.5 License.
+All other files in data/ directory were either obtained from
+https://xkcd.com/1608/ or derived from data obtained from there,
+are (C) Randall Munroe and are licensed under a Creative Commons
+Attribution-NonCommercial 2.5 License.

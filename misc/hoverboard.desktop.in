@@ -3,6 +3,6 @@ Type=Application
 Version=1.0
 Name=Hoverboard
 Comment=xkcd 1608 "Hoverboard" game
-Icon=${ICONDIR}/hoverboard.ico
+Icon=${DATADIR}/xkcd.ico
 Exec=hoverboard
 Categories=Game;AdventureGame;
