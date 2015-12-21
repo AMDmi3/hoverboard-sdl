@@ -53,7 +53,7 @@ int main(int, char*[]) try {
 
 	// We use extracted large icon because otherwise SDL_image will
 	// small (16x16) icon which looks too ugly
-	SDL2pp::Surface icon(DATADIR "/xkcd.png");
+	SDL2pp::Surface icon(HOVERBOARD_DATADIR "/xkcd.png");
 	window.SetIcon(icon);
 
 	SDL2pp::Renderer renderer(window, -1, SDL_RENDERER_ACCELERATED);

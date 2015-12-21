@@ -32,7 +32,7 @@
 
 std::string Tile::MakeTilePath(const SDL2pp::Point& coords) {
 	std::stringstream filename;
-	filename << DATADIR << "/" << coords.x << "/" << coords.y << ".png";
+	filename << HOVERBOARD_DATADIR << "/" << coords.x << "/" << coords.y << ".png";
 	return filename.str();
 }
 
