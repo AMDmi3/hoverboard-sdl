@@ -18,9 +18,9 @@ before_build:
   - if exist %PREFIX% set DEPENDS=rem
 
   - |-
-     %DEPENDS% mkdir %PREFIX%\include\SDL2
-     %DEPENDS% mkdir %PREFIX%\lib
-     %DEPENDS% cd %TEMP%
+    %DEPENDS% mkdir %PREFIX%\include\SDL2
+    %DEPENDS% mkdir %PREFIX%\lib
+    %DEPENDS% cd %TEMP%
 
   # SDL2
   - |-
