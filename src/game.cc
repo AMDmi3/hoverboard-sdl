@@ -536,8 +536,8 @@ void Game::DepositCoins() {
 std::string Game::GetStatePath() {
 #ifdef _WIN32
 	char buffer[MAX_PATH];
-	if (SHGetFolderPath(nullptr, CSIDL_COMMON_APPDATA, nullptr, 0, buffer) == S_OK)
-		return std::string(buffer) + "/hoverboard.state";
+	if (SUCCEEDED(SHGetFolderPath(nullptr, CSIDL_APPDATA, nullptr, 0, buffer)))
+		return std::string(buffer) + "/hoverboard/hoverboard.state";
 #else
 	const char* xdg_data_home = getenv("XDG_DATA_HOME");
 
