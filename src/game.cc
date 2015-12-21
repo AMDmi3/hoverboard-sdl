@@ -20,6 +20,9 @@
 #include "game.hh"
 
 #include <sys/stat.h>
+#ifdef _WIN32
+#	include <shlobj.h>
+#endif
 
 #include <memory>
 #include <sstream>
@@ -531,20 +534,23 @@ void Game::DepositCoins() {
 }
 
 std::string Game::GetStatePath() {
-#ifdef STANDALONE
-	return "hoverboard.state";
+#ifdef _WIN32
+	char buffer[MAX_PATH];
+	if (SHGetFolderPath(nullptr, CSIDL_COMMON_APPDATA, nullptr, 0, buffer) == S_OK)
+		return std::string(buffer) + "/hoverboard.state";
 #else
-	const char* home = getenv("HOME");
 	const char* xdg_data_home = getenv("XDG_DATA_HOME");
 
-	if (xdg_data_home != nullptr) {
+	if (xdg_data_home != nullptr)
 		return std::string(xdg_data_home) + "/hoverboard/hoverboard.state";
-	} else if (home != nullptr) {
+
+	const char* home = getenv("HOME");
+
+	if (home != nullptr)
 		return std::string(home) + "/.local/share/hoverboard/hoverboard.state";
-	} else {
-		return "hoverboard.state";
-	}
 #endif
+
+	return "hoverboard.state";
 }
 
 void Game::SaveState() const {
@@ -554,12 +560,13 @@ void Game::SaveState() const {
 	size_t slashpos = 0;
 
 	while ((slashpos = path.find('/', slashpos)) != std::string::npos) {
-		if (slashpos != 0)
-			mkdir(path.substr(0, slashpos).c_str()
-#ifndef _WIN32
-					, 0777
+		if (slashpos != 0) {
+#ifdef _WIN32
+			mkdir(path.substr(0, slashpos).c_str());
+#else
+			mkdir(path.substr(0, slashpos).c_str(), 0777);
 #endif
-					);
+		}
 		slashpos++;
 	}
 
