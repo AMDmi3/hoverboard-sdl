@@ -1,4 +1,7 @@
 #!/bin/sh
+#
+# Run this script from data/ directory to generate minimap
+#
 
 set -e
 
