@@ -12,11 +12,13 @@ IF(SYSTEMWIDE)
 	SET(DATAROOTDIR "${CMAKE_INSTALL_PREFIX}/share" CACHE STRING "Root directory for data files")
 	SET(DATADIR "${DATAROOTDIR}/hoverboard" CACHE STRING "Where to install data files")
 	SET(DESKTOPDIR "${DATAROOTDIR}/applications" CACHE STRING "Where to install .desktop file")
+	SET(DOCSDIR "${DATAROOTDIR}/doc/hoverboard" CACHE STRING "Where to install documentation")
 ELSEIF(STANDALONE)
 	SET(BINDIR "." CACHE STRING "Where to install binaries")
 	SET(DATAROOTDIR "." CACHE STRING "Root directory for data files")
 	SET(DATADIR "data" CACHE STRING "Where to install data files")
 	SET(DESKTOPDIR "." CACHE STRING "Where to install .desktop file")
+	SET(DOCSDIR "." CACHE STRING "Where to install documentation")
 ENDIF(SYSTEMWIDE)
 
 # flags
@@ -78,6 +80,8 @@ SET_TARGET_PROPERTIES(hoverboard PROPERTIES WIN32_EXECUTABLE ON)
 IF(SYSTEMWIDE OR STANDALONE)
 	INSTALL(TARGETS hoverboard RUNTIME DESTINATION ${BINDIR})
 	INSTALL(DIRECTORY data/ DESTINATION ${DATADIR})
+
+	INSTALL(FILES README.md COPYING COPYING.DATA DESTINATION ${DOCSDIR})
 
 	IF(NOT WIN32)
 		CONFIGURE_FILE(misc/hoverboard.desktop.in misc/hoverboard.desktop)
