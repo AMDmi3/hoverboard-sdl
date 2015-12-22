@@ -17,6 +17,10 @@
  * along with hoverboard-sdl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef _WIN32
+#	include <windows.h>
+#endif
+
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -148,10 +152,18 @@ int main(int, char*[]) try {
 
 	return 0;
 } catch (std::exception& e) {
+#ifdef _WIN32
+	MessageBox(nullptr, e.what(), "Error", MB_ICONERROR | MB_OK);
+#else
 	std::cerr << "Error: " << e.what() << std::endl;
+#endif
 	return 1;
 } catch (...) {
+#ifdef _WIN32
+	MessageBox(nullptr, "Unknown error", "Error", MB_ICONERROR | MB_OK);
+#else
 	std::cerr << "Unknown error" << std::endl;
+#endif
 	return 1;
 }
 
