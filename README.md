@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/AMDmi3/hoverboard-sdl.svg?branch=master)](https://travis-ci.org/AMDmi3/hoverboard-sdl)
 [![Build status](https://ci.appveyor.com/api/projects/status/61fqs0x9furnnw6h/branch/master?svg=true)](https://ci.appveyor.com/project/AMDmi3/hoverboard-sdl)
+![Downloads](https://img.shields.io/github/downloads/AMDmi3/hoverboard-sdl/total.svg)
 
 Standalone version of [xkcd 1608 "Hoverboard"](https://xkcd.com/1608/) game.
 
