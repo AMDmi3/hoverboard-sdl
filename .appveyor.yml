@@ -54,7 +54,7 @@ before_build:
 
   # Newer mingw is required, as older mingw32 does not support std::thread
   - |-
-    %DEPENDS% appveyor DownloadFile http://sourceforge.net/projects/mingw-w64/files/Toolchains targetting Win32/Personal Builds/mingw-builds/4.9.3/threads-posix/dwarf/i686-4.9.3-release-posix-dwarf-rt_v4-rev1.7z/download
+    %DEPENDS% appveyor DownloadFile "http://sourceforge.net/projects/mingw-w64/files/Toolchains targetting Win32/Personal Builds/mingw-builds/4.9.3/threads-posix/dwarf/i686-4.9.3-release-posix-dwarf-rt_v4-rev1.7z/download"
     %DEPENDS%  7z x download -o%MINGW32% > nul
 
 build_script:
