@@ -36,6 +36,8 @@
 
 #include "game.hh"
 
+static const unsigned int AUTOSAVE_INTERVAL_MS = 5000;
+
 static const std::map<SDL_Keycode, int> teleport_slots = {
 	{ SDLK_0, 0 },
 	{ SDLK_1, 1 },
@@ -69,6 +71,7 @@ int main(int, char*[]) try {
 	game.LoadState();
 
 	unsigned int prev_ticks = SDL_GetTicks();
+	unsigned int prev_save_ticks = prev_ticks;
 
 	// Main loop
 	while (1) {
@@ -145,6 +148,11 @@ int main(int, char*[]) try {
 		game.Render();
 
 		renderer.Present();
+
+		if (frame_ticks - prev_save_ticks > AUTOSAVE_INTERVAL_MS) {
+			game.SaveState();
+			prev_save_ticks = frame_ticks;
+		}
 
 		// Frame limiter
 		SDL_Delay(5);
