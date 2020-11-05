@@ -1,6 +1,6 @@
 language: cpp
 os: linux
-dist: focal
+dist: bionic
 compiler:
   - gcc
   - clang
