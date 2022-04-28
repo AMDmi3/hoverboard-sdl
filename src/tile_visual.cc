@@ -19,7 +19,7 @@
 
 #include "tile.hh"
 
-#include <SDL2/SDL_render.h>
+#include <SDL_render.h>
 
 #include <SDL2pp/Renderer.hh>
 #include <SDL2pp/Texture.hh>
