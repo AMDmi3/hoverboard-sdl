@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <cassert>
 #include <sstream>
 
 #include <SDL_surface.h>
