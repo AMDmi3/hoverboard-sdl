@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # meta
-project(hoverboard-sdl)
+project(hoverboard-sdl LANGUAGES CXX VERSION 0.8.0)
 
 # options
 option(SYSTEMWIDE "Build for systemwide installation" OFF)
