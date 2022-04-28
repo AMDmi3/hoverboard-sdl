@@ -1,55 +1,59 @@
-PROJECT(hoverboard-sdl)
+cmake_minimum_required(VERSION 3.16)
 
 # meta
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+project(hoverboard-sdl)
 
 # options
-OPTION(SYSTEMWIDE "Build for systemwide installation" OFF)
-OPTION(STANDALONE "Build for creating standalone package" OFF)
+option(SYSTEMWIDE "Build for systemwide installation" OFF)
+option(STANDALONE "Build for creating standalone package" OFF)
 
-IF(SYSTEMWIDE)
-	SET(BINDIR "${CMAKE_INSTALL_PREFIX}/bin" CACHE STRING "Where to install binaries")
-	SET(DATAROOTDIR "${CMAKE_INSTALL_PREFIX}/share" CACHE STRING "Root directory for data files")
-	SET(DATADIR "${DATAROOTDIR}/hoverboard" CACHE STRING "Where to install data files")
-	SET(DESKTOPDIR "${DATAROOTDIR}/applications" CACHE STRING "Where to install .desktop file")
-	SET(DOCSDIR "${DATAROOTDIR}/doc/hoverboard" CACHE STRING "Where to install documentation")
-ELSEIF(STANDALONE)
-	SET(BINDIR "." CACHE STRING "Where to install binaries")
-	SET(DATAROOTDIR "." CACHE STRING "Root directory for data files")
-	SET(DATADIR "data" CACHE STRING "Where to install data files")
-	SET(DESKTOPDIR "." CACHE STRING "Where to install .desktop file")
-	SET(DOCSDIR "." CACHE STRING "Where to install documentation")
-ENDIF(SYSTEMWIDE)
+if(SYSTEMWIDE)
+	set(BINDIR "${CMAKE_INSTALL_PREFIX}/bin" CACHE STRING "Where to install binaries")
+	set(DATAROOTDIR "${CMAKE_INSTALL_PREFIX}/share" CACHE STRING "Root directory for data files")
+	set(DATADIR "${DATAROOTDIR}/hoverboard" CACHE STRING "Where to install data files")
+	set(DESKTOPDIR "${DATAROOTDIR}/applications" CACHE STRING "Where to install .desktop file")
+	set(DOCSDIR "${DATAROOTDIR}/doc/hoverboard" CACHE STRING "Where to install documentation")
+elseif(STANDALONE)
+	set(BINDIR "." CACHE STRING "Where to install binaries")
+	set(DATAROOTDIR "." CACHE STRING "Root directory for data files")
+	set(DATADIR "data" CACHE STRING "Where to install data files")
+	set(DESKTOPDIR "." CACHE STRING "Where to install .desktop file")
+	set(DOCSDIR "." CACHE STRING "Where to install documentation")
+endif()
 
 # flags
-IF(NOT MSVC)
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -pedantic")
-ENDIF(NOT MSVC)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED YES)
+set(CMAKE_CXX_EXTENSIONS NO)
+
+if(NOT MSVC)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
+endif()
 
 # depends
-IF(NOT EXISTS ${PROJECT_SOURCE_DIR}/extlibs/libSDL2pp/CMakeLists.txt)
-	MESSAGE(FATAL_ERROR "The source directory\n  ${PROJECT_SOURCE_DIR}/extlibs/libSDL2pp\ndoes not contain a CMakeLists.txt file.\nIt is likely that you forgot to run\n  git submodule init && git submodule update")
-ENDIF(NOT EXISTS ${PROJECT_SOURCE_DIR}/extlibs/libSDL2pp/CMakeLists.txt)
+if(EXISTS ${PROJECT_SOURCE_DIR}/extlibs/libSDL2pp/CMakeLists.txt)
+	set(SDL2PP_WITH_IMAGE TRUE)
+	set(SDL2PP_WITH_TTF TRUE)
+	add_subdirectory(extlibs/libSDL2pp)
+else()
+	find_package(SDL2pp)
+endif()
 
-SET(SDL2PP_WITH_IMAGE TRUE)
-SET(SDL2PP_WITH_TTF TRUE)
-ADD_SUBDIRECTORY(extlibs/libSDL2pp)
-
-FIND_PACKAGE(Threads)
+find_package(Threads)
 
 # definitions
-IF(SYSTEMWIDE OR STANDALONE)
-	ADD_DEFINITIONS(-DHOVERBOARD_DATADIR="${DATADIR}")
-ELSE(SYSTEMWIDE OR STANDALONE)
-	ADD_DEFINITIONS(-DHOVERBOARD_DATADIR="${PROJECT_SOURCE_DIR}/data")
-ENDIF(SYSTEMWIDE OR STANDALONE)
+if(SYSTEMWIDE OR STANDALONE)
+	add_definitions(-DHOVERBOARD_DATADIR="${DATADIR}")
+else()
+	add_definitions(-DHOVERBOARD_DATADIR="${PROJECT_SOURCE_DIR}/data")
+endif()
 
-IF(STANDALONE)
-	ADD_DEFINITIONS(-DSTANDALONE)
-ENDIF(STANDALONE)
+if(STANDALONE)
+	add_definitions(-DSTANDALONE)
+endif()
 
 # sources
-SET(SOURCES
+set(SOURCES
 	src/coins.cc
 	src/game.cc
 	src/main.cc
@@ -59,32 +63,31 @@ SET(SOURCES
 	src/tile_visual.cc
 )
 
-SET(HEADERS
+set(HEADERS
 	src/collision.hh
 	src/game.hh
 	src/tilecache.hh
 	src/tile.hh
 )
 
-SET(RCFILES
+set(RCFILES
 	misc/hoverboard.rc
 )
 
 # binary
-INCLUDE_DIRECTORIES(SYSTEM ${SDL2PP_INCLUDE_DIRS})
-ADD_EXECUTABLE(hoverboard ${SOURCES} ${HEADERS} ${RCFILES})
-TARGET_LINK_LIBRARIES(hoverboard ${SDL2PP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-SET_TARGET_PROPERTIES(hoverboard PROPERTIES WIN32_EXECUTABLE ON)
+add_executable(hoverboard ${SOURCES} ${HEADERS} ${RCFILES})
+target_link_libraries(hoverboard SDL2pp::SDL2pp Threads::Threads)
+set_target_properties(hoverboard PROPERTIES WIN32_EXECUTABLE ON)
 
 # installation
-IF(SYSTEMWIDE OR STANDALONE)
-	INSTALL(TARGETS hoverboard RUNTIME DESTINATION ${BINDIR})
-	INSTALL(DIRECTORY data/ DESTINATION ${DATADIR})
+if(SYSTEMWIDE OR STANDALONE)
+	install(TARGETS hoverboard RUNTIME DESTINATION ${BINDIR})
+	install(DIRECTORY data/ DESTINATION ${DATADIR})
 
-	INSTALL(FILES README.md COPYING COPYING.DATA DESTINATION ${DOCSDIR})
+	install(FILES README.md COPYING COPYING.DATA DESTINATION ${DOCSDIR})
 
-	IF(NOT WIN32)
-		CONFIGURE_FILE(misc/hoverboard.desktop.in misc/hoverboard.desktop)
-		INSTALL(FILES ${PROJECT_BINARY_DIR}/misc/hoverboard.desktop DESTINATION ${DESKTOPDIR})
-	ENDIF(NOT WIN32)
-ENDIF(SYSTEMWIDE OR STANDALONE)
+	if(NOT WIN32)
+		configure_file(misc/hoverboard.desktop.in misc/hoverboard.desktop)
+		install(FILES ${PROJECT_BINARY_DIR}/misc/hoverboard.desktop DESTINATION ${DESKTOPDIR})
+	endif()
+endif()
