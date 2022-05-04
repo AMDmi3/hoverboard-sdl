@@ -1,0 +1,36 @@
+name: CI
+on: [ push, pull_request ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:rolling
+    strategy:
+      matrix:
+        include:
+          - { cxx: g++ }
+          - { cxx: clang++ }
+    name: ${{ matrix.cxx }}
+    steps:
+      - name: Install dependencies
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update -qq
+          apt-get install -yqq --no-install-recommends git ca-certificates build-essential clang cmake libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev
+
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Set up environment
+        run: |
+          echo 'CXX=${{ matrix.cxx }}' >> $GITHUB_ENV
+          echo 'CXXFLAGS=-Wall -Wextra -pedantic' >> $GITHUB_ENV  # XXX: Add -Werror
+
+      - name: Configure
+        run: cmake . -DCMAKE_VERBOSE_MAKEFILE=yes -DCMAKE_INSTALL_PREFIX=/usr -DSYSTEMWIDE=yes
+      - name: Build
+        run: cmake --build .
+      - name: Install
+        run: cmake --install .
