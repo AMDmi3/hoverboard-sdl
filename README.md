@@ -1,7 +1,8 @@
-# hoverboard-sdl
-
+[![CI](https://github.com/AMDmi3/hoverboard-sdl/actions/workflows/ci.yml/badge.svg)](https://github.com/AMDmi3/hoverboard-sdl/actions/workflows/ci.yml)
 ![Downloads](https://img.shields.io/github/downloads/AMDmi3/hoverboard-sdl/total.svg)
 [![Packaging status](https://repology.org/badge/tiny-repos/hoverboard.svg)](https://repology.org/metapackage/hoverboard)
+
+# hoverboard-sdl
 
 Standalone version of [xkcd 1608 "Hoverboard"](https://xkcd.com/1608/) game.
 
