@@ -29,7 +29,7 @@ license](https://xkcd.com/license.html), I want to accomplish that.
 ## Features
 
 I consider this a feature-complete reimplementation - it provides
-the complete experience of the original hame and only lacks some
+the complete experience of the original game and only lacks some
 hidden features like Gandalf mode. The project is now focused on
 optimization and extra features (such as game state saving).
 
