@@ -1,6 +1,7 @@
 [![CI](https://github.com/AMDmi3/hoverboard-sdl/actions/workflows/ci.yml/badge.svg)](https://github.com/AMDmi3/hoverboard-sdl/actions/workflows/ci.yml)
 ![Downloads](https://img.shields.io/github/downloads/AMDmi3/hoverboard-sdl/total.svg)
 [![Packaging status](https://repology.org/badge/tiny-repos/hoverboard.svg)](https://repology.org/metapackage/hoverboard)
+[![Github commits (since latest release)](https://img.shields.io/github/commits-since/AMDmi3/hoverboard-sdl/latest.svg)](https://github.com/AMDmi3/hoverboard-sdl)
 
 # hoverboard-sdl
 
